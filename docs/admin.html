@@ -23,7 +23,6 @@
     }
     .login-logo { margin-bottom: 16px; }
     .login-logo img { width: 160px; height: auto; }
-    .login-brand { font-size: 20px; font-weight: 700; color: #60a5fa; letter-spacing: 2px; }
     .login-subtitle { font-size: 13px; color: #94a3b8; margin: 6px 0 32px; }
     .login-input {
       width: 100%; padding: 14px 18px; border-radius: 12px;
@@ -55,7 +54,6 @@
       background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;
       border: none; padding: 8px 18px; border-radius: 8px;
       font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
-      display: inline-flex; align-items: center; gap: 6px;
     }
     .btn-logout {
       background: rgba(255,255,255,0.08); color: #94a3b8;
@@ -94,7 +92,7 @@
     #detailModal.show { display: flex; }
     .modal-box {
       background: white; border-radius: 20px;
-      width: 100%; max-width: 760px; margin: auto;
+      width: 100%; max-width: 820px; margin: auto;
       overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
     .modal-header {
@@ -106,6 +104,10 @@
     .modal-staff-name { font-size: 19px; font-weight: 700; }
     .modal-staff-pos { font-size: 13px; color: #94a3b8; margin-top: 2px; }
     .modal-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+    .work-summary {
+      font-size: 13px; color: #64748b; background: #f8fafc;
+      padding: 6px 16px; border-radius: 999px;
+    }
     .btn-print {
       background: rgba(255,255,255,0.15); color: white;
       border: 1px solid rgba(255,255,255,0.25); padding: 8px 16px;
@@ -120,51 +122,124 @@
     /* Month Navigation */
     .month-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 24px 8px;
+      padding: 16px 24px 12px;
       border-bottom: 1px solid #f1f5f9;
     }
-    .month-label { font-size: 16px; font-weight: 700; color: #1e293b; }
+    .month-label { font-size: 17px; font-weight: 700; color: #1e293b; }
     .month-btn {
       background: #f1f5f9; border: none; border-radius: 8px;
       width: 36px; height: 36px; font-size: 16px; cursor: pointer;
       color: #475569; transition: background 0.2s;
     }
     .month-btn:hover { background: #e2e8f0; }
-    .work-summary {
-      font-size: 13px; color: #64748b; background: #f8fafc;
-      padding: 6px 16px; border-radius: 999px;
-    }
 
-    /* Calendar */
-    .modal-body { padding: 16px 24px 24px; }
+    /* ===== CALENDAR ===== */
+    .modal-body { padding: 16px 20px 24px; }
+    .cal-hint { font-size: 11px; color: #94a3b8; text-align: right; margin-bottom: 8px; }
     .cal-grid {
       display: grid; grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      gap: 5px;
     }
     .cal-header {
       text-align: center; font-size: 11px; font-weight: 700;
-      color: #64748b; padding: 8px 0; text-transform: uppercase;
+      color: #94a3b8; padding: 8px 0;
     }
-    .cal-header.sun { color: #dc2626; }
-    .cal-header.sat { color: #2563eb; }
+    .cal-header.sun { color: #ef4444; }
+    .cal-header.sat { color: #3b82f6; }
     .cal-cell {
-      min-height: 72px; border-radius: 10px; padding: 6px;
+      min-height: 90px; border-radius: 10px; padding: 8px 6px;
       border: 1px solid #f1f5f9; background: #fafafa;
-      font-size: 12px; position: relative;
+      font-size: 12px; position: relative; vertical-align: top;
     }
-    .cal-cell.empty { border: none; background: none; }
-    .cal-cell.sun .cal-day { color: #dc2626; }
-    .cal-cell.sat .cal-day { color: #2563eb; }
+    .cal-cell.empty { border: none; background: none; min-height: 0; }
+    .cal-cell.sun .cal-day { color: #ef4444; }
+    .cal-cell.sat .cal-day { color: #3b82f6; }
     .cal-cell.today { border: 2px solid #3b82f6 !important; background: #eff6ff; }
-    .cal-cell.has-record { background: white; border-color: #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .cal-day { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .cal-cell.has-record {
+      background: white; border-color: #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .cal-cell.has-record:hover {
+      border-color: #3b82f6; box-shadow: 0 4px 16px rgba(59,130,246,0.2);
+      transform: translateY(-1px);
+    }
+    .cal-day { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px; }
     .cal-time {
       font-size: 10px; font-weight: 600; padding: 2px 5px;
-      border-radius: 4px; margin-bottom: 2px; white-space: nowrap;
+      border-radius: 5px; margin-bottom: 3px; white-space: nowrap;
+      display: flex; align-items: center; gap: 3px;
     }
     .cal-time.in { background: #dcfce7; color: #15803d; }
     .cal-time.out { background: #fee2e2; color: #dc2626; }
+    .cal-duration {
+      font-size: 9px; color: #94a3b8; margin-top: 4px;
+    }
+    .cal-cam {
+      position: absolute; bottom: 6px; right: 6px;
+      font-size: 12px; opacity: 0.5;
+    }
     .no-records { text-align: center; padding: 40px; color: #94a3b8; }
+
+    /* ===== DAY DETAIL MODAL ===== */
+    #dayModal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+      z-index: 300; align-items: center; justify-content: center; padding: 20px;
+    }
+    #dayModal.show { display: flex; }
+    .day-box {
+      background: white; border-radius: 20px; width: 100%; max-width: 560px;
+      overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    }
+    .day-header {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      color: white; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .day-header-left { display: flex; align-items: center; gap: 12px; }
+    .day-staff-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3); }
+    .day-title { font-size: 15px; font-weight: 700; }
+    .day-subtitle { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .btn-day-close { background: rgba(255,255,255,0.1); color: white; border: none; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .day-body { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .day-record { }
+    .day-record-label {
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 6px; margin-bottom: 10px; display: inline-block;
+    }
+    .day-record-label.in { background: #dcfce7; color: #15803d; }
+    .day-record-label.out { background: #fee2e2; color: #dc2626; }
+    .day-record-time { font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+    .day-photo-wrap {
+      width: 100%; aspect-ratio: 4/3; border-radius: 12px;
+      overflow: hidden; background: #f1f5f9; position: relative;
+    }
+    .day-photo-wrap img {
+      width: 100%; height: 100%; object-fit: cover; cursor: zoom-in;
+      transition: transform 0.2s;
+    }
+    .day-photo-wrap img:hover { transform: scale(1.03); }
+    .day-no-photo {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: #94a3b8; flex-direction: column; gap: 6px;
+    }
+    .day-no-photo .icon { font-size: 28px; }
+    .day-no-record {
+      display: flex; align-items: center; justify-content: center;
+      height: 140px; font-size: 13px; color: #cbd5e1;
+      border: 2px dashed #e2e8f0; border-radius: 12px; flex-direction: column; gap: 6px;
+    }
+    .day-no-record .icon { font-size: 24px; }
+
+    /* ===== PHOTO FULLSCREEN ===== */
+    #photoFullModal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92); z-index: 400;
+      align-items: center; justify-content: center; cursor: zoom-out;
+    }
+    #photoFullModal.show { display: flex; }
+    #photoFullImg { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
 
     /* ===== PRINT STYLES ===== */
     @media print {
@@ -173,7 +248,7 @@
       #detailModal { position: static !important; background: none !important; padding: 0 !important; overflow: visible !important; }
       .modal-box { box-shadow: none !important; border-radius: 0 !important; max-width: 100% !important; }
       .modal-header { background: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .btn-print, .btn-close, .month-btn { display: none !important; }
+      .btn-print, .btn-close, .month-btn, .cal-hint { display: none !important; }
       .cal-cell.has-record { box-shadow: none !important; }
       .cal-time.in, .cal-time.out { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
@@ -217,7 +292,7 @@
   </div>
 </div>
 
-<!-- 詳細モーダル -->
+<!-- 勤怠詳細モーダル（カレンダー） -->
 <div id="detailModal">
   <div class="modal-box">
     <div class="modal-header">
@@ -228,7 +303,7 @@
       </div>
       <div class="modal-actions">
         <span class="work-summary" id="workSummary"></span>
-        <button class="btn-print" onclick="printDetail()">🖨️ PDF印刷</button>
+        <button class="btn-print" onclick="printDetail()">🖨️ 印刷</button>
         <button class="btn-close" onclick="closeDetail()">✕</button>
       </div>
     </div>
@@ -238,9 +313,35 @@
       <button class="month-btn" onclick="nextMonth()">▶</button>
     </div>
     <div class="modal-body">
+      <div class="cal-hint">📷 出退勤のある日をクリックすると写真を確認できます</div>
       <div id="recordsContainer"></div>
     </div>
   </div>
+</div>
+
+<!-- 日付別詳細モーダル（写真表示） -->
+<div id="dayModal">
+  <div class="day-box">
+    <div class="day-header">
+      <div class="day-header-left">
+        <img class="day-staff-mini" id="dayStaffPhoto" src="" alt="">
+        <div>
+          <div class="day-title" id="dayModalDate"></div>
+          <div class="day-subtitle" id="dayModalName"></div>
+        </div>
+      </div>
+      <button class="btn-day-close" onclick="closeDayModal()">✕</button>
+    </div>
+    <div class="day-body">
+      <div class="day-record" id="dayModalIn"></div>
+      <div class="day-record" id="dayModalOut"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 写真フルスクリーン -->
+<div id="photoFullModal" onclick="closePhotoFull()">
+  <img id="photoFullImg" src="" alt="">
 </div>
 
 <script>
@@ -258,6 +359,7 @@ const firebaseConfig = {
 let db;
 let currentViewMonth = new Date();
 let currentStaffRecords = [];
+let currentStaffData = null;
 
 window.addEventListener('load', () => {
   firebase.initializeApp(firebaseConfig);
@@ -307,7 +409,7 @@ async function loadStaffList() {
       <img class="staff-card-photo" src="${photo}" alt="${d.name}">
       <div class="staff-card-name">${d.name}</div>
       <div class="staff-card-pos">${d.position || '（役職なし）'}</div>
-      <button class="staff-card-btn" onclick="openDetail('${doc.id}')">詳細を見る</button>
+      <button class="staff-card-btn" onclick="openDetail('${doc.id}')">勤怠を見る</button>
       <br>
       <button class="btn-delete-staff" onclick="deleteStaff('${doc.id}','${d.name}',event)">🗑 削除</button>
     `;
@@ -328,18 +430,18 @@ async function deleteStaff(staffId, name, e) {
 }
 
 // ============================
-// 詳細モーダル（カレンダー表示）
+// 詳細モーダル（カレンダー）
 // ============================
 async function openDetail(staffId) {
   const doc = await db.collection('staff').doc(staffId).get();
-  const staff = doc.data();
-  document.getElementById('modalName').textContent = staff.name;
-  document.getElementById('modalPos').textContent = staff.position || '（役職なし）';
-  document.getElementById('modalPhoto').src = staff.photoBase64 || generateAvatar(staff.name);
+  currentStaffData = { id: staffId, ...doc.data() };
+
+  document.getElementById('modalName').textContent = currentStaffData.name;
+  document.getElementById('modalPos').textContent = currentStaffData.position || '（役職なし）';
+  document.getElementById('modalPhoto').src = currentStaffData.photoBase64 || generateAvatar(currentStaffData.name);
   document.getElementById('recordsContainer').innerHTML = '<div class="no-records">読み込み中...</div>';
   document.getElementById('detailModal').classList.add('show');
 
-  // 全打刻記録取得
   try {
     const snap = await db.collection('records').where('staffId', '==', staffId).get();
     currentStaffRecords = [];
@@ -349,7 +451,6 @@ async function openDetail(staffId) {
     return;
   }
 
-  // 最新の記録がある月を初期表示
   if (currentStaffRecords.length > 0) {
     const latest = currentStaffRecords.reduce((a, b) => {
       const ta = a.timestamp ? a.timestamp.toMillis() : 0;
@@ -374,7 +475,7 @@ function renderCalendar() {
   const month = currentViewMonth.getMonth();
   document.getElementById('monthLabel').textContent = `${year}年${month + 1}月`;
 
-  // 日付ごとに出勤・退勤をまとめる
+  // 日付ごとにまとめる
   const byDate = {};
   currentStaffRecords.forEach(r => {
     if (!r.timestamp) return;
@@ -382,10 +483,11 @@ function renderCalendar() {
     const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jst.getFullYear() !== year || jst.getMonth() !== month) return;
     const key = jst.getDate();
-    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [] };
+    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [], hasPhoto: false };
     const hm = `${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')}`;
     if (r.type === 'in') byDate[key].inTimes.push(hm);
     else byDate[key].outTimes.push(hm);
+    if (r.photoBase64) byDate[key].hasPhoto = true;
   });
 
   const firstDay = new Date(year, month, 1).getDay();
@@ -410,16 +512,29 @@ function renderCalendar() {
     if (dow === 6) cls += ' sat';
     if (isToday) cls += ' today';
     if (rec) cls += ' has-record';
-    html += `<div class="${cls}"><div class="cal-day">${d}</div>`;
+
+    const clickAttr = rec ? `onclick="openDayDetail(${d})"` : '';
+    html += `<div class="${cls}" ${clickAttr}><div class="cal-day">${d}</div>`;
+
     if (rec) {
       if (rec.inTimes.length > 0) {
         const earliest = rec.inTimes.sort()[0];
-        html += `<div class="cal-time in">出 ${earliest}</div>`;
+        html += `<div class="cal-time in">▲ ${earliest}</div>`;
       }
       if (rec.outTimes.length > 0) {
-        const latest = rec.outTimes.sort().pop();
-        html += `<div class="cal-time out">退 ${latest}</div>`;
+        const latest = rec.outTimes.slice().sort().pop();
+        html += `<div class="cal-time out">▼ ${latest}</div>`;
       }
+      // 勤務時間を計算して表示
+      if (rec.inTimes.length > 0 && rec.outTimes.length > 0) {
+        const inMin = timeToMin(rec.inTimes.sort()[0]);
+        const outMin = timeToMin(rec.outTimes.slice().sort().pop());
+        if (outMin > inMin) {
+          const diff = outMin - inMin;
+          html += `<div class="cal-duration">${Math.floor(diff/60)}h${diff%60 > 0 ? diff%60 + 'm' : ''}</div>`;
+        }
+      }
+      if (rec.hasPhoto) html += `<div class="cal-cam">📷</div>`;
     }
     html += '</div>';
   }
@@ -428,6 +543,11 @@ function renderCalendar() {
 
   const workDays = Object.keys(byDate).length;
   document.getElementById('workSummary').textContent = `${month + 1}月：出勤 ${workDays}日`;
+}
+
+function timeToMin(hm) {
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
 }
 
 function prevMonth() {
@@ -451,6 +571,80 @@ function printDetail() {
 document.getElementById('detailModal').addEventListener('click', function(e) {
   if (e.target === this) closeDetail();
 });
+
+// ============================
+// 日付詳細モーダル（写真表示）
+// ============================
+function openDayDetail(day) {
+  const year = currentViewMonth.getFullYear();
+  const month = currentViewMonth.getMonth();
+  const dayNames = ['日','月','火','水','木','金','土'];
+  const dow = new Date(year, month, day).getDay();
+  const dowLabel = ['（日）','（月）','（火）','（水）','（木）','（金）','（土）'][dow];
+
+  document.getElementById('dayModalDate').textContent = `${year}年${month + 1}月${day}日${dowLabel}`;
+  document.getElementById('dayModalName').textContent = currentStaffData ? currentStaffData.name : '';
+  document.getElementById('dayStaffPhoto').src = currentStaffData ? (currentStaffData.photoBase64 || generateAvatar(currentStaffData.name)) : '';
+
+  // その日のレコードを絞り込む
+  const dayRecords = currentStaffRecords.filter(r => {
+    if (!r.timestamp) return false;
+    const ts = r.timestamp.toDate();
+    const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    return jst.getFullYear() === year && jst.getMonth() === month && jst.getDate() === day;
+  }).sort((a, b) => {
+    const ta = a.timestamp ? a.timestamp.toMillis() : 0;
+    const tb = b.timestamp ? b.timestamp.toMillis() : 0;
+    return ta - tb;
+  });
+
+  const inRecord  = dayRecords.find(r => r.type === 'in');
+  const outRecord = dayRecords.find(r => r.type === 'out');
+
+  document.getElementById('dayModalIn').innerHTML  = buildDayRecord(inRecord,  'in',  '出勤');
+  document.getElementById('dayModalOut').innerHTML = buildDayRecord(outRecord, 'out', '退勤');
+
+  document.getElementById('dayModal').classList.add('show');
+}
+
+function buildDayRecord(record, type, label) {
+  if (!record) {
+    return `<span class="day-record-label ${type}">${label}</span>
+      <div class="day-no-record"><span class="icon">—</span><span>記録なし</span></div>`;
+  }
+
+  const ts = record.timestamp.toDate();
+  const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const hm = `${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')}`;
+
+  const photoHtml = record.photoBase64
+    ? `<div class="day-photo-wrap"><img src="${record.photoBase64}" alt="${label}写真" onclick="openPhotoFull('${record.photoBase64}')"></div>`
+    : `<div class="day-photo-wrap"><div class="day-no-photo"><span class="icon">📷</span><span>写真なし</span></div></div>`;
+
+  return `<span class="day-record-label ${type}">${label}</span>
+    <div class="day-record-time">${hm}</div>
+    ${photoHtml}`;
+}
+
+function closeDayModal() {
+  document.getElementById('dayModal').classList.remove('show');
+}
+
+document.getElementById('dayModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDayModal();
+});
+
+// ============================
+// 写真フルスクリーン
+// ============================
+function openPhotoFull(src) {
+  document.getElementById('photoFullImg').src = src;
+  document.getElementById('photoFullModal').classList.add('show');
+}
+
+function closePhotoFull() {
+  document.getElementById('photoFullModal').classList.remove('show');
+}
 </script>
 </body>
 </html>
