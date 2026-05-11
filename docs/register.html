@@ -368,12 +368,14 @@ async function capturePhoto() {
     return;
   }
 
-  // プロフィール写真（正方形にクロップ）
+  // プロフィール写真（顔を中心に余白を広めにとってクロップ）
   const face = detection.detection.box;
-  const pad = 60;
-  const x = Math.max(0, face.x - pad);
-  const y = Math.max(0, face.y - pad);
-  const size = Math.max(face.width, face.height) + pad * 2;
+  const faceCenterX = face.x + face.width / 2;
+  const faceCenterY = face.y + face.height / 2;
+  const cropSize = Math.max(face.width, face.height) * 3.5; // 顔サイズの3.5倍の範囲
+  const x = Math.max(0, faceCenterX - cropSize / 2);
+  const y = Math.max(0, faceCenterY - cropSize / 2.2); // 少し上寄りに
+  const size = Math.min(cropSize, canvas.width - x, canvas.height - y);
   const cropCanvas = document.createElement('canvas');
   cropCanvas.width = 300; cropCanvas.height = 300;
   cropCanvas.getContext('2d').drawImage(canvas, x, y, size, size, 0, 0, 300, 300);
