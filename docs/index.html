@@ -143,6 +143,11 @@
     }
     .face-detecting { color: #fbbf24; }
     .face-recognized { color: #34d399; }
+    .camera-status.liveness-check {
+      color: #fbbf24; font-weight: 700;
+      animation: pulse-text 0.8s ease-in-out infinite;
+    }
+    @keyframes pulse-text { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
     /* Profile Card */
     #profileCard {
@@ -291,6 +296,29 @@
     #thanksInScreen .thanks-bar-fill { background: #34d399; }
     #thanksOutScreen .thanks-bar-fill { background: #818cf8; }
 
+    /* Fraud Screen */
+    #fraudScreen {
+      display: none; min-height: 100vh;
+      align-items: center; justify-content: center;
+      flex-direction: column; text-align: center; padding: 40px 20px;
+      background: #160000; position: relative; overflow: hidden;
+    }
+    #fraudScreen::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(239,68,68,0.35) 0%, transparent 65%);
+    }
+    .fraud-warn { font-size: 64px; margin-bottom: 20px; position: relative; animation: shake 0.5s ease-in-out 0.3s 2; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+    .fraud-photo {
+      width: 150px; height: 150px; border-radius: 16px; object-fit: cover;
+      border: 3px solid rgba(239,68,68,0.7);
+      margin-bottom: 24px; position: relative;
+      box-shadow: 0 0 30px rgba(239,68,68,0.4);
+    }
+    .fraud-title { font-size: 20px; font-weight: 800; color: #fca5a5; margin-bottom: 8px; position: relative; }
+    .fraud-sub { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 4px; position: relative; }
+    .fraud-time { font-size: 12px; color: rgba(255,255,255,0.3); position: relative; margin-bottom: 32px; }
+
     /* Loading overlay */
     #loadingOverlay {
       position: fixed; inset: 0;
@@ -407,6 +435,16 @@
     <div class="thanks-bar"><div class="thanks-bar-fill" id="thanksInBar"></div></div>
   </div>
 
+  <!-- 不正行為検知画面 -->
+  <div id="fraudScreen">
+    <div class="fraud-warn">⚠️</div>
+    <img class="fraud-photo" id="fraudPhoto" src="" alt="不正行為">
+    <div class="fraud-title">不正行為が検知されました</div>
+    <div class="fraud-sub">撮影・記録されました。管理者に報告されます。</div>
+    <div class="fraud-time" id="fraudTime"></div>
+    <div class="thanks-bar"><div class="thanks-bar-fill" id="fraudBar" style="background:#ef4444"></div></div>
+  </div>
+
   <!-- サンクス画面（退勤） -->
   <div id="thanksOutScreen" class="thanks-screen">
     <div class="thanks-badge out">✓ &nbsp;退勤完了</div>
@@ -446,6 +484,13 @@ let detectionActive = false;
 let labeledDescriptors = [];
 let detectionTimer = null;
 let videoStream = null;
+// まばたき検知
+let livenessActive = false;
+let eyesClosed = false;
+let blinkDetected = false;
+let livenessTimeout = null;
+let livenessCountdownTimer = null;
+let livenessCountdown = 4;
 
 // ============================
 // 初期化
@@ -629,6 +674,7 @@ function startDetection() {
       if (!currentStaff || currentStaff.id !== bestMatch.id) {
         showProfile(bestMatch);
       }
+      if (livenessActive) checkBlink(detection.landmarks);
     } else {
       if (currentStaff) hideProfile();
       setStatus('登録されていない方です', 'detecting');
@@ -636,33 +682,128 @@ function startDetection() {
   }, 600);
 }
 
+// ============================
+// まばたき検知（Liveness）
+// ============================
+function startLivenessCheck() {
+  livenessActive = true;
+  eyesClosed = false;
+  blinkDetected = false;
+  livenessCountdown = 4;
+  setStatus('👁 まばたきしてください（残り 4 秒）', 'liveness');
+
+  livenessCountdownTimer = setInterval(() => {
+    livenessCountdown--;
+    if (livenessCountdown > 0) {
+      setStatus(`👁 まばたきしてください（残り ${livenessCountdown} 秒）`, 'liveness');
+    }
+  }, 1000);
+
+  livenessTimeout = setTimeout(() => {
+    if (!blinkDetected) handleFraud();
+  }, 4000);
+}
+
+function cancelLiveness() {
+  livenessActive = false;
+  blinkDetected = false;
+  eyesClosed = false;
+  clearTimeout(livenessTimeout);
+  clearInterval(livenessCountdownTimer);
+  livenessTimeout = null;
+  livenessCountdownTimer = null;
+}
+
+function calculateEAR(eye) {
+  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  return (d(eye[1], eye[5]) + d(eye[2], eye[4])) / (2 * d(eye[0], eye[3]));
+}
+
+function checkBlink(landmarks) {
+  const ear = (calculateEAR(landmarks.getLeftEye()) + calculateEAR(landmarks.getRightEye())) / 2;
+  if (ear < 0.20) {
+    eyesClosed = true;
+  } else if (eyesClosed && ear > 0.25) {
+    blinkDetected = true;
+    livenessActive = false;
+    clearTimeout(livenessTimeout);
+    clearInterval(livenessCountdownTimer);
+    enableButtons();
+  }
+}
+
+async function handleFraud() {
+  if (!currentStaff) return;
+  cancelLiveness();
+  if (detectionTimer) { clearInterval(detectionTimer); detectionTimer = null; }
+
+  const photo = capturePhoto();
+  const now = new Date();
+  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const h = String(jst.getHours()).padStart(2,'0');
+  const m = String(jst.getMinutes()).padStart(2,'0');
+  const timeStr = `${h}:${m}`;
+
+  try {
+    await db.collection('fraudLogs').add({
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      photoBase64: photo,
+      detectedStaffId: currentStaff.id,
+      detectedStaffName: currentStaff.name,
+    });
+  } catch(e) { console.error('fraud log error:', e); }
+
+  document.getElementById('clockScreen').style.display = 'none';
+  document.getElementById('fraudPhoto').src = photo;
+  document.getElementById('fraudTime').textContent = `検知時刻：${timeStr}　対象：${currentStaff.name}`;
+  document.getElementById('fraudScreen').style.display = 'flex';
+  setTimeout(() => document.getElementById('fraudBar').style.width = '100%', 100);
+
+  setTimeout(() => {
+    document.getElementById('fraudScreen').style.display = 'none';
+    document.getElementById('fraudBar').style.width = '0%';
+    document.getElementById('clockScreen').style.display = 'flex';
+    hideProfile();
+    startDetection();
+  }, 5000);
+}
+
 function setStatus(msg, cls) {
   const el = document.getElementById('cameraStatus');
   el.textContent = msg;
-  el.className = 'camera-status ' + (cls || '');
+  el.className = 'camera-status';
   if (cls === 'recognized') el.classList.add('face-recognized');
   if (cls === 'detecting') el.classList.add('face-detecting');
+  if (cls === 'liveness') el.classList.add('liveness-check');
 }
 
 // ============================
 // プロフィール表示
 // ============================
 function showProfile(staff) {
+  cancelLiveness();
   currentStaff = staff;
   document.getElementById('staffNameEl').textContent = staff.name;
   document.getElementById('staffPositionEl').textContent = staff.position;
   document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
   document.getElementById('profileCard').style.display = 'flex';
-  document.getElementById('btnIn').disabled = false;
-  document.getElementById('btnOut').disabled = false;
-  setStatus('✓ ' + staff.name + 'さんを認証しました', 'recognized');
+  document.getElementById('btnIn').disabled = true;
+  document.getElementById('btnOut').disabled = true;
+  startLivenessCheck();
 }
 
 function hideProfile() {
+  cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
   document.getElementById('btnOut').disabled = true;
+}
+
+function enableButtons() {
+  document.getElementById('btnIn').disabled = false;
+  document.getElementById('btnOut').disabled = false;
+  setStatus('✓ ' + currentStaff.name + 'さんを認証しました', 'recognized');
 }
 
 // ============================

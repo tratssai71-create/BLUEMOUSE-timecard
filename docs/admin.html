@@ -82,6 +82,34 @@
     .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
 
+    /* ===== FRAUD LOGS ===== */
+    .fraud-section { margin-top: 48px; }
+    .fraud-section-title {
+      font-size: 13px; font-weight: 700; color: #ef4444;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .fraud-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .fraud-card {
+      background: white; border-radius: 16px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 2px solid #fecaca;
+    }
+    .fraud-card-photo {
+      width: 100%; aspect-ratio: 4/3; object-fit: cover;
+      cursor: zoom-in; display: block;
+      transition: transform 0.2s;
+    }
+    .fraud-card-photo:hover { transform: scale(1.03); }
+    .fraud-card-body { padding: 12px 14px; }
+    .fraud-card-name { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 3px; }
+    .fraud-card-time { font-size: 11px; color: #94a3b8; }
+    .fraud-card-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;
+      padding: 2px 8px; border-radius: 999px; margin-bottom: 6px;
+    }
+    .fraud-empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 14px; }
+
     /* ===== DETAIL MODAL ===== */
     #detailModal {
       display: none; position: fixed; inset: 0;
@@ -322,6 +350,13 @@
     <div class="staff-grid" id="staffGrid">
       <div class="empty-state"><div class="icon">⏳</div><div>読み込み中...</div></div>
     </div>
+
+    <div class="fraud-section">
+      <div class="fraud-section-title">⚠️ 不正行為ログ</div>
+      <div class="fraud-grid" id="fraudGrid">
+        <div class="fraud-empty">読み込み中...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -428,6 +463,7 @@ function adminLogout() {
 async function loadStaffList() {
   const grid = document.getElementById('staffGrid');
   grid.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><div>読み込み中...</div></div>';
+  loadFraudLogs();
   const snapshot = await db.collection('staff').get();
   if (snapshot.empty) {
     grid.innerHTML = '<div class="empty-state"><div class="icon">👥</div><div>スタッフが登録されていません<br><a href="register.html" style="color:#3b82f6">＋ メンバーを追加する</a></div></div>';
@@ -461,6 +497,50 @@ async function deleteStaff(staffId, name, e) {
   if (!confirm(`${name}さんを削除しますか？`)) return;
   await db.collection('staff').doc(staffId).delete();
   loadStaffList();
+}
+
+// ============================
+// 不正行為ログ
+// ============================
+async function loadFraudLogs() {
+  const grid = document.getElementById('fraudGrid');
+  try {
+    const snap = await db.collection('fraudLogs').get();
+    if (snap.empty) {
+      grid.innerHTML = '<div class="fraud-empty">不正行為の記録はありません ✓</div>';
+      return;
+    }
+    const logs = [];
+    snap.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
+    logs.sort((a, b) => {
+      const ta = a.timestamp ? a.timestamp.toMillis() : 0;
+      const tb = b.timestamp ? b.timestamp.toMillis() : 0;
+      return tb - ta;
+    });
+    grid.innerHTML = '';
+    logs.forEach(log => {
+      let timeStr = '–';
+      if (log.timestamp) {
+        const ts = log.timestamp.toDate();
+        const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+        const pad = n => String(n).padStart(2,'0');
+        timeStr = `${jst.getFullYear()}/${pad(jst.getMonth()+1)}/${pad(jst.getDate())} ${pad(jst.getHours())}:${pad(jst.getMinutes())}`;
+      }
+      const card = document.createElement('div');
+      card.className = 'fraud-card';
+      card.innerHTML = `
+        <img class="fraud-card-photo" src="${log.photoBase64 || ''}" alt="不正行為写真"
+          onclick="openPhotoFull('${log.photoBase64 || ''}')">
+        <div class="fraud-card-body">
+          <div class="fraud-card-badge">⚠ 不正行為検知</div>
+          <div class="fraud-card-name">${log.detectedStaffName || '不明'}</div>
+          <div class="fraud-card-time">${timeStr}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  } catch(e) {
+    grid.innerHTML = '<div class="fraud-empty">読み込みに失敗しました</div>';
+  }
 }
 
 // ============================
