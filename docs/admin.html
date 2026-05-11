@@ -399,16 +399,31 @@ async function openDetail(staffId) {
   document.getElementById('modalPos').textContent = staff.position || '（役職なし）';
   document.getElementById('modalPhoto').src = staff.photoBase64 || generateAvatar(staff.name);
 
-  // 打刻記録取得
-  const records = await db.collection('records')
-    .where('staffId', '==', staffId)
-    .orderBy('timestamp', 'desc')
-    .limit(100)
-    .get();
-
+  // 打刻記録取得（インデックス不要のシンプルなクエリ→JS側でソート）
   const container = document.getElementById('recordsContainer');
+  container.innerHTML = '<div class="no-records">読み込み中...</div>';
 
-  if (records.empty) {
+  let allRecords = [];
+  try {
+    const snap = await db.collection('records')
+      .where('staffId', '==', staffId)
+      .get();
+    snap.forEach(r => allRecords.push({ id: r.id, ...r.data() }));
+  } catch(e) {
+    container.innerHTML = '<div class="no-records">記録の取得に失敗しました</div>';
+    console.error(e);
+    document.getElementById('detailModal').classList.add('show');
+    return;
+  }
+
+  // 新しい順にソート
+  allRecords.sort((a, b) => {
+    const ta = a.timestamp ? a.timestamp.toMillis() : 0;
+    const tb = b.timestamp ? b.timestamp.toMillis() : 0;
+    return tb - ta;
+  });
+
+  if (allRecords.length === 0) {
     container.innerHTML = '<div class="no-records">打刻記録がありません</div>';
   } else {
     let html = `
@@ -423,8 +438,7 @@ async function openDetail(staffId) {
         </thead>
         <tbody>
     `;
-    records.forEach(r => {
-      const d = r.data();
+    allRecords.forEach(d => {
       const ts = d.timestamp ? d.timestamp.toDate() : new Date();
       const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
       const dateStr = `${jst.getFullYear()}/${jst.getMonth()+1}/${jst.getDate()}`;
