@@ -6,6 +6,8 @@
   <title>タイムカード | BLUE MOUSE</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -484,13 +486,8 @@ let detectionActive = false;
 let labeledDescriptors = [];
 let detectionTimer = null;
 let videoStream = null;
-// まばたき検知
-let livenessActive = false;
-let eyesClosed = false;
-let blinkDetected = false;
-let livenessTimeout = null;
-let livenessCountdownTimer = null;
-let livenessCountdown = 4;
+// スマホ検知
+let phoneDetector = null;
 
 // ============================
 // 初期化
@@ -517,6 +514,9 @@ window.addEventListener('load', async () => {
   } catch(e) {
     console.error('モデル読み込みエラー:', e);
   }
+
+  // COCO-SSD（スマホ検知）をバックグラウンドで読み込み
+  cocoSsd.load().then(model => { phoneDetector = model; }).catch(e => console.warn('COCO-SSD load error:', e));
 
   // ローディング終了
   document.getElementById('loadingOverlay').style.display = 'none';
@@ -674,7 +674,12 @@ function startDetection() {
       if (!currentStaff || currentStaff.id !== bestMatch.id) {
         showProfile(bestMatch);
       }
-      if (livenessActive) checkBlink(detection.landmarks);
+      // スマホ検知
+      if (phoneDetector) {
+        const predictions = await phoneDetector.detect(video);
+        const hasPhone = predictions.some(p => p.class === 'cell phone' && p.score > 0.5);
+        if (hasPhone) { handleFraud(); return; }
+      }
     } else {
       if (currentStaff) hideProfile();
       setStatus('登録されていない方です', 'detecting');
@@ -682,59 +687,8 @@ function startDetection() {
   }, 600);
 }
 
-// ============================
-// まばたき検知（Liveness）
-// ============================
-function startLivenessCheck() {
-  livenessActive = true;
-  eyesClosed = false;
-  blinkDetected = false;
-  livenessCountdown = 4;
-  setStatus('👁 まばたきしてください（残り 4 秒）', 'liveness');
-
-  livenessCountdownTimer = setInterval(() => {
-    livenessCountdown--;
-    if (livenessCountdown > 0) {
-      setStatus(`👁 まばたきしてください（残り ${livenessCountdown} 秒）`, 'liveness');
-    }
-  }, 1000);
-
-  livenessTimeout = setTimeout(() => {
-    if (!blinkDetected) handleFraud();
-  }, 4000);
-}
-
-function cancelLiveness() {
-  livenessActive = false;
-  blinkDetected = false;
-  eyesClosed = false;
-  clearTimeout(livenessTimeout);
-  clearInterval(livenessCountdownTimer);
-  livenessTimeout = null;
-  livenessCountdownTimer = null;
-}
-
-function calculateEAR(eye) {
-  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  return (d(eye[1], eye[5]) + d(eye[2], eye[4])) / (2 * d(eye[0], eye[3]));
-}
-
-function checkBlink(landmarks) {
-  const ear = (calculateEAR(landmarks.getLeftEye()) + calculateEAR(landmarks.getRightEye())) / 2;
-  if (ear < 0.20) {
-    eyesClosed = true;
-  } else if (eyesClosed && ear > 0.25) {
-    blinkDetected = true;
-    livenessActive = false;
-    clearTimeout(livenessTimeout);
-    clearInterval(livenessCountdownTimer);
-    enableButtons();
-  }
-}
-
 async function handleFraud() {
   if (!currentStaff) return;
-  cancelLiveness();
   if (detectionTimer) { clearInterval(detectionTimer); detectionTimer = null; }
 
   const photo = capturePhoto();
@@ -774,26 +728,21 @@ function setStatus(msg, cls) {
   el.className = 'camera-status';
   if (cls === 'recognized') el.classList.add('face-recognized');
   if (cls === 'detecting') el.classList.add('face-detecting');
-  if (cls === 'liveness') el.classList.add('liveness-check');
 }
 
 // ============================
 // プロフィール表示
 // ============================
 function showProfile(staff) {
-  cancelLiveness();
   currentStaff = staff;
   document.getElementById('staffNameEl').textContent = staff.name;
   document.getElementById('staffPositionEl').textContent = staff.position;
   document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
   document.getElementById('profileCard').style.display = 'flex';
-  document.getElementById('btnIn').disabled = true;
-  document.getElementById('btnOut').disabled = true;
-  startLivenessCheck();
+  enableButtons();
 }
 
 function hideProfile() {
-  cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
