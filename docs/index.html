@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイムカード | BLUE MOUSE</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
+
+    /* ===== LOGIN SCREEN ===== */
+    #loginScreen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    }
+    .login-box {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 380px;
+      text-align: center;
+    }
+    .login-logo { font-size: 48px; margin-bottom: 8px; }
+    .login-brand { font-size: 22px; font-weight: 700; color: #60a5fa; letter-spacing: 2px; margin-bottom: 4px; }
+    .login-subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 32px; }
+    .login-time {
+      font-size: 42px; font-weight: 200; color: #f8fafc;
+      letter-spacing: 3px; margin-bottom: 8px;
+    }
+    .login-date { font-size: 14px; color: #94a3b8; margin-bottom: 32px; }
+    .login-input {
+      width: 100%; padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: #f8fafc; font-size: 16px;
+      margin-bottom: 16px; text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-input:focus { border-color: #3b82f6; }
+    .login-input::placeholder { letter-spacing: 1px; color: #64748b; }
+    .login-btn {
+      width: 100%; padding: 14px; border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white; font-size: 16px; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(37,99,235,0.4);
+    }
+    .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,99,235,0.5); }
+    .login-btn:active { transform: translateY(0); }
+    .login-error { color: #f87171; font-size: 13px; margin-top: 12px; display: none; }
+
+    /* ===== MAIN APP ===== */
+    #mainApp { display: none; min-height: 100vh; }
+
+    /* Sidebar */
+    #sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0;
+      width: 220px; background: rgba(15,23,42,0.95);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      padding: 24px 0;
+      transform: translateX(-220px);
+      transition: transform 0.3s ease;
+      z-index: 100;
+    }
+    #sidebar.open { transform: translateX(0); }
+    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-logo .brand { font-size: 14px; font-weight: 700; color: #60a5fa; letter-spacing: 1px; }
+    .sidebar-logo .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .sidebar-nav { padding: 16px 0; }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px; color: #94a3b8;
+      text-decoration: none; font-size: 14px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #f8fafc; }
+    .sidebar-link .icon { font-size: 18px; }
+    #sidebarOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 99;
+    }
+    #sidebarOverlay.show { display: block; }
+
+    /* Top bar */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 56px;
+      background: rgba(15,23,42,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; padding: 0 16px;
+      z-index: 50;
+    }
+    .menu-btn {
+      background: none; border: none; color: #f8fafc;
+      font-size: 22px; cursor: pointer; padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .menu-btn:hover { background: rgba(255,255,255,0.1); }
+    .topbar-title { font-size: 15px; font-weight: 600; margin-left: 12px; color: #e2e8f0; }
+
+    /* Clock Screen */
+    #clockScreen {
+      padding-top: 56px;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    }
+
+    .clock-time-section {
+      text-align: center; padding: 32px 20px 24px;
+    }
+    .clock-time { font-size: 56px; font-weight: 200; letter-spacing: 4px; color: #f8fafc; }
+    .clock-date { font-size: 15px; color: #94a3b8; margin-top: 6px; }
+
+    /* Camera */
+    .camera-wrapper {
+      position: relative;
+      width: min(400px, 90vw);
+      border-radius: 20px;
+      overflow: hidden;
+      background: #1e293b;
+      border: 2px solid rgba(255,255,255,0.1);
+    }
+    #video { width: 100%; display: block; border-radius: 18px; }
+    #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .camera-status {
+      text-align: center; padding: 10px 16px;
+      font-size: 13px; color: #94a3b8;
+      background: rgba(0,0,0,0.3);
+    }
+    .face-detecting { color: #fbbf24; }
+    .face-recognized { color: #34d399; }
+
+    /* Profile Card */
+    #profileCard {
+      display: none;
+      width: min(400px, 90vw);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    #staffPhotoEl {
+      width: 64px; height: 64px; border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #34d399;
+      flex-shrink: 0;
+    }
+    .profile-info { flex: 1; }
+    .profile-name { font-size: 18px; font-weight: 700; color: #f8fafc; }
+    .profile-position { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .auth-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(52,211,153,0.15);
+      border: 1px solid rgba(52,211,153,0.4);
+      color: #34d399;
+      font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 999px;
+      margin-top: 6px;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex; gap: 16px;
+      width: min(400px, 90vw);
+      margin-top: 16px; padding-bottom: 32px;
+    }
+    .btn-clock {
+      flex: 1; padding: 20px;
+      border-radius: 16px; border: none;
+      font-size: 20px; font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+    }
+    .btn-clock:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+    .btn-clock:not(:disabled):hover { transform: translateY(-2px); }
+    .btn-clock:not(:disabled):active { transform: translateY(0); }
+    #btnIn {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white; box-shadow: 0 4px 20px rgba(5,150,105,0.3);
+    }
+    #btnOut {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: white; box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+    }
+    #btnIn:not(:disabled) { box-shadow: 0 4px 20px rgba(5,150,105,0.4); }
+    #btnOut:not(:disabled) { box-shadow: 0 4px 20px rgba(220,38,38,0.4); }
+
+    /* Thanks Screens */
+    .thanks-screen {
+      display: none;
+      min-height: 100vh;
+      align-items: center; justify-content: center;
+      flex-direction: column;
+      text-align: center; padding: 40px 20px;
+    }
+    #thanksInScreen { background: linear-gradient(135deg, #064e3b, #065f46); }
+    #thanksOutScreen { background: linear-gradient(135deg, #1e1b4b, #312e81); }
+    .thanks-icon { font-size: 80px; margin-bottom: 24px; }
+    .thanks-staff-photo {
+      width: 100px; height: 100px; border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.4);
+      margin-bottom: 20px;
+    }
+    .thanks-name { font-size: 28px; font-weight: 700; color: #f8fafc; margin-bottom: 12px; }
+    .thanks-message { font-size: 22px; color: rgba(255,255,255,0.85); margin-bottom: 16px; font-weight: 500; }
+    .thanks-time { font-size: 15px; color: rgba(255,255,255,0.5); }
+    .thanks-bar {
+      width: 200px; height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin-top: 32px;
+      overflow: hidden;
+    }
+    .thanks-bar-fill {
+      height: 100%; background: white;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 5s linear;
+    }
+
+    /* Loading overlay */
+    #loadingOverlay {
+      position: fixed; inset: 0;
+      background: #0f172a;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 20px;
+      z-index: 999;
+    }
+    .loading-spinner {
+      width: 48px; height: 48px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">起動中...</div>
+</div>
+
+<!-- ログイン画面 -->
+<div id="loginScreen" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">🐭</div>
+    <div class="login-brand">BLUE MOUSE</div>
+    <div class="login-subtitle">タイムカードシステム</div>
+    <div class="login-time" id="loginTime">--:--:--</div>
+    <div class="login-date" id="loginDate"></div>
+    <input type="password" class="login-input" id="passwordInput"
+      placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" onclick="login()">ログイン</button>
+    <div class="login-error" id="loginError">パスワードが正しくありません</div>
+  </div>
+</div>
+
+<!-- メインアプリ -->
+<div id="mainApp">
+  <!-- サイドバーオーバーレイ -->
+  <div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- サイドバー -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">🐭 BLUE MOUSE</div>
+      <div class="sub">タイムカードシステム</div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" onclick="closeSidebar()">
+        <span class="icon">🕐</span> 打刻画面
+      </a>
+      <a href="admin.html" class="sidebar-link">
+        <span class="icon">⚙️</span> 管理者ページ
+      </a>
+      <a class="sidebar-link" onclick="logout()">
+        <span class="icon">🚪</span> ログアウト
+      </a>
+    </nav>
+  </div>
+
+  <!-- トップバー -->
+  <div class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <span class="topbar-title">タイムカード</span>
+  </div>
+
+  <!-- 打刻画面 -->
+  <div id="clockScreen">
+    <div class="clock-time-section">
+      <div class="clock-time" id="clockTime">--:--:--</div>
+      <div class="clock-date" id="clockDate"></div>
+    </div>
+
+    <div class="camera-wrapper">
+      <video id="video" autoplay muted playsinline></video>
+      <canvas id="overlay"></canvas>
+      <div class="camera-status" id="cameraStatus">カメラを起動中...</div>
+    </div>
+
+    <div id="profileCard">
+      <img id="staffPhotoEl" src="" alt="">
+      <div class="profile-info">
+        <div class="profile-name" id="staffNameEl"></div>
+        <div class="profile-position" id="staffPositionEl"></div>
+        <div class="auth-badge">✓ 顔認証完了</div>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn-clock" id="btnIn" disabled onclick="clockAction('in')">
+        出勤
+      </button>
+      <button class="btn-clock" id="btnOut" disabled onclick="clockAction('out')">
+        退勤
+      </button>
+    </div>
+  </div>
+
+  <!-- サンクス画面（出勤） -->
+  <div id="thanksInScreen" class="thanks-screen">
+    <div class="thanks-icon">🌅</div>
+    <img class="thanks-staff-photo" id="thanksInPhoto" src="" alt="">
+    <div class="thanks-name" id="thanksInName"></div>
+    <div class="thanks-message">今日も1日頑張りましょう！</div>
+    <div class="thanks-time" id="thanksInTime"></div>
+    <div class="thanks-bar"><div class="thanks-bar-fill" id="thanksInBar"></div></div>
+  </div>
+
+  <!-- サンクス画面（退勤） -->
+  <div id="thanksOutScreen" class="thanks-screen">
+    <div class="thanks-icon">🌙</div>
+    <img class="thanks-staff-photo" id="thanksOutPhoto" src="" alt="">
+    <div class="thanks-name" id="thanksOutName"></div>
+    <div class="thanks-message">今日も1日お疲れ様でした！</div>
+    <div class="thanks-time" id="thanksOutTime"></div>
+    <div class="thanks-bar"><div class="thanks-bar-fill" id="thanksOutBar"></div></div>
+  </div>
+</div>
+
+<script>
+// ============================
+// 設定（変更可能）
+// ============================
+const STAFF_PASSWORD = 'bluemouse';
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAxkP1UP8UQffk8PxMp1_PUKNYaqo63QfU",
+  authDomain: "bluemouse-dfd31.firebaseapp.com",
+  projectId: "bluemouse-dfd31",
+  storageBucket: "bluemouse-dfd31.firebasestorage.app",
+  messagingSenderId: "244172125496",
+  appId: "1:244172125496:web:117e6c1aeeaa056ba2bdcd"
+};
+
+// ============================
+// アプリ状態
+// ============================
+let db;
+let currentStaff = null;
+let detectionActive = false;
+let labeledDescriptors = [];
+let detectionTimer = null;
+let videoStream = null;
+
+// ============================
+// 初期化
+// ============================
+window.addEventListener('load', async () => {
+  // Firebase初期化
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+
+  // 時計スタート
+  startClock('loginTime', 'loginDate');
+
+  // face-api.js読み込み待ち
+  setLoadingText('顔認証モデルを読み込み中...');
+  await waitForFaceApi();
+
+  // モデル読み込み
+  try {
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+  } catch(e) {
+    console.error('モデル読み込みエラー:', e);
+  }
+
+  // ローディング終了
+  document.getElementById('loadingOverlay').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+});
+
+function waitForFaceApi() {
+  return new Promise(resolve => {
+    const check = () => { if (window.faceapi) resolve(); else setTimeout(check, 100); };
+    check();
+  });
+}
+
+function setLoadingText(text) {
+  document.getElementById('loadingText').textContent = text;
+}
+
+// ============================
+// 時計
+// ============================
+function startClock(timeId, dateId) {
+  const update = () => {
+    const now = new Date();
+    const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const h = String(jst.getHours()).padStart(2,'0');
+    const m = String(jst.getMinutes()).padStart(2,'0');
+    const s = String(jst.getSeconds()).padStart(2,'0');
+    const timeEl = document.getElementById(timeId);
+    const dateEl = document.getElementById(dateId);
+    if (timeEl) timeEl.textContent = `${h}:${m}:${s}`;
+    if (dateEl) {
+      const days = ['日','月','火','水','木','金','土'];
+      dateEl.textContent = `${jst.getFullYear()}年${jst.getMonth()+1}月${jst.getDate()}日（${days[jst.getDay()]}）`;
+    }
+  };
+  update();
+  setInterval(update, 1000);
+}
+
+// ============================
+// ログイン / ログアウト
+// ============================
+function login() {
+  const pw = document.getElementById('passwordInput').value;
+  if (pw === STAFF_PASSWORD) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    startClock('clockTime', 'clockDate');
+    startCamera();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+function logout() {
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  if (detectionTimer) { clearInterval(detectionTimer); detectionTimer = null; }
+  currentStaff = null;
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('passwordInput').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  closeSidebar();
+}
+
+// ============================
+// サイドバー
+// ============================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ============================
+// カメラ起動
+// ============================
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    videoStream = stream;
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    setStatus('スタッフの顔をカメラに向けてください', 'detecting');
+    await loadStaffDescriptors();
+    startDetection();
+  } catch(e) {
+    setStatus('カメラにアクセスできません', '');
+    console.error(e);
+  }
+}
+
+// ============================
+// スタッフ顔データ読み込み
+// ============================
+async function loadStaffDescriptors() {
+  const snapshot = await db.collection('staff').get();
+  labeledDescriptors = [];
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    if (d.faceDescriptor && d.faceDescriptor.length > 0) {
+      labeledDescriptors.push({
+        id: doc.id,
+        name: d.name,
+        position: d.position || '',
+        photo: d.photoBase64 || '',
+        descriptor: new Float32Array(d.faceDescriptor)
+      });
+    }
+  });
+}
+
+// ============================
+// 顔認証ループ
+// ============================
+function startDetection() {
+  const video = document.getElementById('video');
+  detectionTimer = setInterval(async () => {
+    if (!video.videoWidth) return;
+
+    const detection = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (!detection) {
+      if (currentStaff) hideProfile();
+      setStatus('スタッフの顔をカメラに向けてください', 'detecting');
+      return;
+    }
+
+    if (labeledDescriptors.length === 0) {
+      setStatus('スタッフが未登録です（管理者ページから登録してください）', '');
+      return;
+    }
+
+    // 最も近いスタッフを探す
+    let bestMatch = null;
+    let bestDistance = Infinity;
+    for (const staff of labeledDescriptors) {
+      const dist = faceapi.euclideanDistance(detection.descriptor, staff.descriptor);
+      if (dist < bestDistance) { bestDistance = dist; bestMatch = staff; }
+    }
+
+    const THRESHOLD = 0.5;
+    if (bestDistance < THRESHOLD) {
+      if (!currentStaff || currentStaff.id !== bestMatch.id) {
+        showProfile(bestMatch);
+      }
+    } else {
+      if (currentStaff) hideProfile();
+      setStatus('登録されていない方です', 'detecting');
+    }
+  }, 600);
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('cameraStatus');
+  el.textContent = msg;
+  el.className = 'camera-status ' + (cls || '');
+  if (cls === 'recognized') el.classList.add('face-recognized');
+  if (cls === 'detecting') el.classList.add('face-detecting');
+}
+
+// ============================
+// プロフィール表示
+// ============================
+function showProfile(staff) {
+  currentStaff = staff;
+  document.getElementById('staffNameEl').textContent = staff.name;
+  document.getElementById('staffPositionEl').textContent = staff.position;
+  document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
+  document.getElementById('profileCard').style.display = 'flex';
+  document.getElementById('btnIn').disabled = false;
+  document.getElementById('btnOut').disabled = false;
+  setStatus('✓ ' + staff.name + 'さんを認証しました', 'recognized');
+}
+
+function hideProfile() {
+  currentStaff = null;
+  document.getElementById('profileCard').style.display = 'none';
+  document.getElementById('btnIn').disabled = true;
+  document.getElementById('btnOut').disabled = true;
+}
+
+// ============================
+// 打刻処理
+// ============================
+async function clockAction(type) {
+  if (!currentStaff) return;
+  const staff = { ...currentStaff };
+
+  // ボタン無効化（二重打刻防止）
+  document.getElementById('btnIn').disabled = true;
+  document.getElementById('btnOut').disabled = true;
+
+  // 写真撮影
+  const photo = capturePhoto();
+
+  // Firestoreに保存
+  const now = new Date();
+  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  await db.collection('records').add({
+    staffId: staff.id,
+    staffName: staff.name,
+    type: type,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    photoBase64: photo
+  });
+
+  // サンクス画面へ
+  showThanks(type, staff, jst);
+}
+
+function capturePhoto() {
+  const video = document.getElementById('video');
+  const canvas = document.createElement('canvas');
+  const W = 320, H = 240;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const scale = Math.min(W / video.videoWidth, H / video.videoHeight);
+  const w = video.videoWidth * scale;
+  const h = video.videoHeight * scale;
+  ctx.drawImage(video, (W-w)/2, (H-h)/2, w, h);
+  return canvas.toDataURL('image/jpeg', 0.4);
+}
+
+// ============================
+// サンクス画面
+// ============================
+function showThanks(type, staff, time) {
+  if (detectionTimer) { clearInterval(detectionTimer); detectionTimer = null; }
+
+  document.getElementById('clockScreen').style.display = 'none';
+
+  const h = String(time.getHours()).padStart(2,'0');
+  const m = String(time.getMinutes()).padStart(2,'0');
+  const timeStr = `${h}:${m}`;
+
+  if (type === 'in') {
+    document.getElementById('thanksInName').textContent = staff.name + ' さん';
+    document.getElementById('thanksInTime').textContent = `出勤時刻：${timeStr}`;
+    document.getElementById('thanksInPhoto').src = staff.photo || '';
+    document.getElementById('thanksInScreen').style.display = 'flex';
+    setTimeout(() => document.getElementById('thanksInBar').style.width = '100%', 100);
+  } else {
+    document.getElementById('thanksOutName').textContent = staff.name + ' さん';
+    document.getElementById('thanksOutTime').textContent = `退勤時刻：${timeStr}`;
+    document.getElementById('thanksOutPhoto').src = staff.photo || '';
+    document.getElementById('thanksOutScreen').style.display = 'flex';
+    setTimeout(() => document.getElementById('thanksOutBar').style.width = '100%', 100);
+  }
+
+  // 5秒後に打刻画面へ戻る
+  setTimeout(() => returnToClock(), 5000);
+}
+
+async function returnToClock() {
+  document.getElementById('thanksInScreen').style.display = 'none';
+  document.getElementById('thanksOutScreen').style.display = 'none';
+  document.getElementById('thanksInBar').style.width = '0%';
+  document.getElementById('thanksOutBar').style.width = '0%';
+  document.getElementById('clockScreen').style.display = 'flex';
+  hideProfile();
+  setStatus('スタッフの顔をカメラに向けてください', 'detecting');
+  await loadStaffDescriptors();
+  startDetection();
+}
+</script>
+</body>
+</html>

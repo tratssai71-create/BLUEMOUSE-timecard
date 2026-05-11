@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メンバー登録 | BLUE MOUSE タイムカード</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    .header {
+      background: #0f172a; color: white;
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .header-logo { font-size: 16px; font-weight: 700; color: #60a5fa; }
+    .header-title { font-size: 15px; color: #94a3b8; margin-left: 12px; }
+    .back-link {
+      color: #94a3b8; font-size: 13px; text-decoration: none;
+      padding: 6px 12px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: background 0.2s;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.08); color: white; }
+
+    .content { max-width: 680px; margin: 0 auto; padding: 32px 24px; }
+
+    .card {
+      background: white; border-radius: 20px;
+      padding: 32px; margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 16px; font-weight: 700; color: #1e293b;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: #475569; margin-bottom: 8px;
+    }
+    .required { color: #ef4444; margin-left: 4px; }
+    .form-input {
+      width: 100%; padding: 12px 16px;
+      border: 1px solid #e2e8f0; border-radius: 10px;
+      font-size: 15px; color: #1e293b;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      background: #f8fafc;
+    }
+    .form-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      background: white;
+    }
+
+    /* Camera section */
+    .camera-section { margin-top: 8px; }
+    .camera-box {
+      background: #1e293b; border-radius: 16px;
+      overflow: hidden; position: relative;
+      aspect-ratio: 4/3; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .camera-placeholder {
+      text-align: center; color: #64748b; padding: 32px;
+    }
+    .camera-placeholder .icon { font-size: 48px; margin-bottom: 12px; }
+    .camera-placeholder .text { font-size: 14px; }
+    #regVideo { width: 100%; display: none; border-radius: 16px; }
+    #capturedImg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; display: none;
+      border-radius: 16px;
+    }
+    .camera-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .face-guide {
+      width: 200px; height: 240px;
+      border: 3px solid rgba(52,211,153,0.6);
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(52,211,153,0.2);
+      display: none;
+    }
+
+    .camera-controls { display: flex; gap: 12px; margin-bottom: 16px; }
+    .btn { padding: 11px 20px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+    .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; flex: 1; }
+    .btn-secondary { background: #f1f5f9; color: #475569; flex: 1; }
+    .btn-success { background: linear-gradient(135deg, #059669, #047857); color: white; flex: 1; }
+    .btn-capture { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; flex: 1; }
+
+    /* Status */
+    .status-box {
+      padding: 12px 16px; border-radius: 10px;
+      font-size: 14px; font-weight: 500;
+      margin-top: 12px; display: none;
+    }
+    .status-loading { background: #fef9c3; color: #854d0e; display: flex; align-items: center; gap: 8px; }
+    .status-success { background: #dcfce7; color: #15803d; }
+    .status-error { background: #fee2e2; color: #dc2626; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(133,77,14,0.2);
+      border-top-color: #854d0e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Save button */
+    .btn-save {
+      width: 100%; padding: 16px; border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white; font-size: 16px; font-weight: 700;
+      border: none; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(37,99,235,0.3);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn-save:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Loading overlay */
+    #loadingOverlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.8);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px; z-index: 999;
+    }
+    #loadingOverlay.hidden { display: none; }
+    .loading-spinner {
+      width: 48px; height: 48px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .loading-text { color: #94a3b8; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">顔認証モデルを読み込み中...</div>
+</div>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="header-logo">🐭 BLUE MOUSE</span>
+    <span class="header-title">メンバー登録</span>
+  </div>
+  <a href="admin.html" class="back-link">← 管理者ページへ</a>
+</div>
+
+<div class="content">
+
+  <!-- 基本情報 -->
+  <div class="card">
+    <div class="card-title">👤 スタッフ情報</div>
+
+    <div class="form-group">
+      <label class="form-label">名前<span class="required">*</span></label>
+      <input type="text" class="form-input" id="inputName" placeholder="例：田中 太郎">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">役職</label>
+      <input type="text" class="form-input" id="inputPosition" placeholder="例：スタッフ、リーダー、マネージャー">
+    </div>
+  </div>
+
+  <!-- 顔写真 -->
+  <div class="card">
+    <div class="card-title">📷 顔写真・顔認証データの登録</div>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px">
+      スタッフの顔を正面からカメラに映して撮影してください。<br>
+      明るい場所で撮影すると精度が上がります。
+    </p>
+
+    <div class="camera-box" id="cameraBox">
+      <div class="camera-placeholder" id="cameraPlaceholder">
+        <div class="icon">📷</div>
+        <div class="text">「カメラを起動」を押して撮影してください</div>
+      </div>
+      <video id="regVideo" autoplay muted playsinline></video>
+      <img id="capturedImg" src="" alt="撮影した写真">
+      <div class="camera-overlay">
+        <div class="face-guide" id="faceGuide"></div>
+      </div>
+    </div>
+
+    <div class="camera-controls">
+      <button class="btn btn-primary" id="btnStartCamera" onclick="startCamera()">📷 カメラを起動</button>
+      <button class="btn btn-capture" id="btnCapture" onclick="capturePhoto()" disabled>✓ 撮影する</button>
+      <button class="btn btn-secondary" id="btnRetake" onclick="retakePhoto()" style="display:none">↩ 撮り直し</button>
+    </div>
+
+    <div class="status-box status-loading" id="statusLoading">
+      <div class="spinner"></div>
+      <span id="statusLoadingText">顔を解析中...</span>
+    </div>
+    <div class="status-box status-success" id="statusSuccess">
+      ✓ 顔認証データの取得が完了しました！
+    </div>
+    <div class="status-box status-error" id="statusError" id="statusError">
+      顔が検出できませんでした。明るい場所で正面を向いて撮影してください。
+    </div>
+  </div>
+
+  <!-- 保存ボタン -->
+  <button class="btn-save" id="btnSave" onclick="saveStaff()" disabled>
+    スタッフを登録する
+  </button>
+
+</div>
+
+<script>
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAxkP1UP8UQffk8PxMp1_PUKNYaqo63QfU",
+  authDomain: "bluemouse-dfd31.firebaseapp.com",
+  projectId: "bluemouse-dfd31",
+  storageBucket: "bluemouse-dfd31.firebasestorage.app",
+  messagingSenderId: "244172125496",
+  appId: "1:244172125496:web:117e6c1aeeaa056ba2bdcd"
+};
+
+let db;
+let videoStream = null;
+let faceDescriptor = null;
+let photoBase64 = null;
+
+window.addEventListener('load', async () => {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+
+  await waitForFaceApi();
+
+  document.getElementById('loadingText').textContent = '顔認証モデルを読み込み中...';
+  await Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+  ]);
+
+  document.getElementById('loadingOverlay').classList.add('hidden');
+});
+
+function waitForFaceApi() {
+  return new Promise(resolve => {
+    const check = () => { if (window.faceapi) resolve(); else setTimeout(check, 100); };
+    check();
+  });
+}
+
+// ============================
+// カメラ
+// ============================
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    videoStream = stream;
+    const video = document.getElementById('regVideo');
+    video.srcObject = stream;
+    await video.play();
+
+    document.getElementById('cameraPlaceholder').style.display = 'none';
+    document.getElementById('capturedImg').style.display = 'none';
+    video.style.display = 'block';
+    document.getElementById('faceGuide').style.display = 'block';
+    document.getElementById('btnStartCamera').style.display = 'none';
+    document.getElementById('btnCapture').disabled = false;
+    document.getElementById('btnRetake').style.display = 'none';
+    hideStatus();
+    faceDescriptor = null;
+    photoBase64 = null;
+    document.getElementById('btnSave').disabled = true;
+  } catch(e) {
+    alert('カメラにアクセスできません。\nブラウザの設定でカメラを許可してください。');
+    console.error(e);
+  }
+}
+
+async function capturePhoto() {
+  const video = document.getElementById('regVideo');
+  if (!video.videoWidth) return;
+
+  showStatus('loading', '顔を検出・解析中...');
+  document.getElementById('btnCapture').disabled = true;
+
+  // 撮影
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  // 顔検出
+  let detection;
+  try {
+    detection = await faceapi
+      .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+  } catch(e) {
+    console.error(e);
+  }
+
+  if (!detection) {
+    showStatus('error', '顔が検出できませんでした。正面を向いて再撮影してください。');
+    document.getElementById('btnCapture').disabled = false;
+    return;
+  }
+
+  // プロフィール写真（正方形にクロップ）
+  const face = detection.detection.box;
+  const pad = 60;
+  const x = Math.max(0, face.x - pad);
+  const y = Math.max(0, face.y - pad);
+  const size = Math.max(face.width, face.height) + pad * 2;
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = 300; cropCanvas.height = 300;
+  cropCanvas.getContext('2d').drawImage(canvas, x, y, size, size, 0, 0, 300, 300);
+  photoBase64 = cropCanvas.toDataURL('image/jpeg', 0.8);
+  faceDescriptor = Array.from(detection.descriptor);
+
+  // 撮影した写真を表示
+  const img = document.getElementById('capturedImg');
+  img.src = photoBase64;
+  img.style.display = 'block';
+  video.style.display = 'none';
+  document.getElementById('faceGuide').style.display = 'none';
+
+  // カメラを停止
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+
+  document.getElementById('btnRetake').style.display = 'block';
+  document.getElementById('btnCapture').style.display = 'none';
+  document.getElementById('btnStartCamera').style.display = 'none';
+  showStatus('success', '');
+  document.getElementById('btnSave').disabled = false;
+}
+
+function retakePhoto() {
+  const img = document.getElementById('capturedImg');
+  img.style.display = 'none';
+  img.src = '';
+  document.getElementById('btnRetake').style.display = 'none';
+  document.getElementById('btnCapture').style.display = 'block';
+  document.getElementById('btnCapture').disabled = false;
+  document.getElementById('btnStartCamera').style.display = 'block';
+  faceDescriptor = null; photoBase64 = null;
+  document.getElementById('btnSave').disabled = true;
+  hideStatus();
+  startCamera();
+}
+
+// ============================
+// ステータス表示
+// ============================
+function showStatus(type, msg) {
+  hideStatus();
+  if (type === 'loading') {
+    document.getElementById('statusLoadingText').textContent = msg;
+    document.getElementById('statusLoading').style.display = 'flex';
+  } else if (type === 'success') {
+    document.getElementById('statusSuccess').style.display = 'block';
+  } else if (type === 'error') {
+    document.getElementById('statusError').textContent = msg;
+    document.getElementById('statusError').style.display = 'block';
+  }
+}
+function hideStatus() {
+  document.getElementById('statusLoading').style.display = 'none';
+  document.getElementById('statusSuccess').style.display = 'none';
+  document.getElementById('statusError').style.display = 'none';
+}
+
+// ============================
+// スタッフ保存
+// ============================
+async function saveStaff() {
+  const name = document.getElementById('inputName').value.trim();
+  const position = document.getElementById('inputPosition').value.trim();
+
+  if (!name) { alert('名前を入力してください'); return; }
+  if (!faceDescriptor) { alert('顔写真を撮影してください'); return; }
+
+  document.getElementById('btnSave').disabled = true;
+  document.getElementById('btnSave').textContent = '登録中...';
+
+  try {
+    await db.collection('staff').add({
+      name: name,
+      position: position,
+      photoBase64: photoBase64,
+      faceDescriptor: faceDescriptor,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    alert(`✓ ${name}さんを登録しました！`);
+    window.location.href = 'admin.html';
+  } catch(e) {
+    alert('登録に失敗しました: ' + e.message);
+    document.getElementById('btnSave').disabled = false;
+    document.getElementById('btnSave').textContent = 'スタッフを登録する';
+  }
+}
+</script>
+</body>
+</html>
