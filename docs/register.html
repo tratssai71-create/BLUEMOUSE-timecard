@@ -154,11 +154,30 @@
 </head>
 <body>
 
-<div id="loadingOverlay">
+<!-- 管理者パスワード確認画面 -->
+<div id="authScreen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e3a5f)">
+  <div style="background:rgba(255,255,255,0.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:48px 40px;width:360px;text-align:center">
+    <div style="font-size:40px;margin-bottom:8px">🔐</div>
+    <div style="font-size:18px;font-weight:700;color:#60a5fa;margin-bottom:4px">管理者認証</div>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:28px">メンバー登録には管理者パスワードが必要です</div>
+    <input type="password" id="authInput" placeholder="管理者パスワード"
+      style="width:100%;padding:13px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#f8fafc;font-size:15px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:14px"
+      onkeydown="if(event.key==='Enter')checkAuth()">
+    <button onclick="checkAuth()"
+      style="width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;font-size:15px;font-weight:600;border:none;cursor:pointer">
+      認証する
+    </button>
+    <div id="authError" style="color:#f87171;font-size:13px;margin-top:12px;display:none">パスワードが正しくありません</div>
+    <div style="margin-top:20px"><a href="admin.html" style="color:#64748b;font-size:13px;text-decoration:none">← 管理者ページへ戻る</a></div>
+  </div>
+</div>
+
+<div id="loadingOverlay" style="display:none">
   <div class="loading-spinner"></div>
   <div class="loading-text" id="loadingText">顔認証モデルを読み込み中...</div>
 </div>
 
+<div id="mainContent" style="display:none">
 <div class="header">
   <div style="display:flex;align-items:center;gap:12px">
     <span class="header-logo">🐭 BLUE MOUSE</span>
@@ -228,8 +247,10 @@
   </button>
 
 </div>
+</div><!-- end mainContent -->
 
 <script>
+const ADMIN_PASSWORD = '0218bass';
 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
 const firebaseConfig = {
@@ -246,7 +267,22 @@ let videoStream = null;
 let faceDescriptor = null;
 let photoBase64 = null;
 
-window.addEventListener('load', async () => {
+// ============================
+// 管理者認証
+// ============================
+function checkAuth() {
+  const pw = document.getElementById('authInput').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    initApp();
+  } else {
+    document.getElementById('authError').style.display = 'block';
+    document.getElementById('authInput').value = '';
+  }
+}
+
+async function initApp() {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
 
@@ -259,8 +295,11 @@ window.addEventListener('load', async () => {
     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
   ]);
 
-  document.getElementById('loadingOverlay').classList.add('hidden');
-});
+  document.getElementById('loadingOverlay').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+}
+
+// Firebase は initApp() 内で初期化するため、ここでは何もしない
 
 function waitForFaceApi() {
   return new Promise(resolve => {
