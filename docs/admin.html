@@ -17,227 +17,164 @@
       background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
     }
     .login-box {
-      background: rgba(255,255,255,0.06);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 24px;
-      padding: 48px 40px;
-      width: 380px;
-      text-align: center;
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+      padding: 48px 40px; width: 380px; text-align: center;
     }
     .login-logo { font-size: 48px; margin-bottom: 8px; }
     .login-brand { font-size: 20px; font-weight: 700; color: #60a5fa; letter-spacing: 2px; }
     .login-subtitle { font-size: 13px; color: #94a3b8; margin: 6px 0 32px; }
     .login-input {
       width: 100%; padding: 14px 18px; border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.08);
-      color: #f8fafc; font-size: 16px;
-      margin-bottom: 16px; text-align: center;
-      letter-spacing: 4px; outline: none;
-      transition: border-color 0.2s;
+      border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+      color: #f8fafc; font-size: 16px; margin-bottom: 16px;
+      text-align: center; letter-spacing: 4px; outline: none;
     }
     .login-input:focus { border-color: #3b82f6; }
     .login-input::placeholder { letter-spacing: 1px; color: #64748b; }
     .login-btn {
       width: 100%; padding: 14px; border-radius: 12px;
       background: linear-gradient(135deg, #7c3aed, #6d28d9);
-      color: white; font-size: 16px; font-weight: 600;
-      border: none; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
-      transition: transform 0.1s;
+      color: white; font-size: 16px; font-weight: 600; border: none; cursor: pointer;
     }
-    .login-btn:hover { transform: translateY(-1px); }
     .login-error { color: #f87171; font-size: 13px; margin-top: 12px; display: none; }
 
-    /* ===== MAIN APP ===== */
+    /* ===== HEADER ===== */
     #mainApp { display: none; }
-
-    /* Header */
     .header {
-      background: #0f172a;
-      color: white;
-      padding: 0 24px;
-      height: 60px;
+      background: #0f172a; color: white; padding: 0 24px; height: 60px;
       display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 50;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     .header-left { display: flex; align-items: center; gap: 12px; }
     .header-logo { font-size: 18px; font-weight: 700; color: #60a5fa; }
     .header-title { font-size: 15px; color: #94a3b8; }
     .header-right { display: flex; align-items: center; gap: 12px; }
     .btn-add {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: white; border: none;
-      padding: 8px 18px; border-radius: 8px;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; text-decoration: none;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;
+      border: none; padding: 8px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
       display: inline-flex; align-items: center; gap: 6px;
-      transition: transform 0.1s;
     }
-    .btn-add:hover { transform: translateY(-1px); }
     .btn-logout {
-      background: rgba(255,255,255,0.08);
-      color: #94a3b8; border: 1px solid rgba(255,255,255,0.1);
-      padding: 8px 14px; border-radius: 8px;
-      font-size: 13px; cursor: pointer;
-      transition: background 0.2s;
+      background: rgba(255,255,255,0.08); color: #94a3b8;
+      border: 1px solid rgba(255,255,255,0.1); padding: 8px 14px;
+      border-radius: 8px; font-size: 13px; cursor: pointer;
     }
-    .btn-logout:hover { background: rgba(255,255,255,0.12); color: white; }
 
-    /* Content */
+    /* ===== STAFF GRID ===== */
     .content { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
-    .section-title {
-      font-size: 13px; font-weight: 600; color: #64748b;
-      text-transform: uppercase; letter-spacing: 1px;
-      margin-bottom: 20px;
-    }
-
-    /* Staff Grid */
-    .staff-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 16px;
-    }
+    .section-title { font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+    .staff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
     .staff-card {
-      background: white;
-      border-radius: 16px;
-      padding: 24px 16px;
-      text-align: center;
-      cursor: pointer;
+      background: white; border-radius: 16px; padding: 24px 16px;
+      text-align: center; cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      border: 2px solid transparent;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 2px solid transparent;
     }
-    .staff-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-      border-color: #3b82f6;
-    }
-    .staff-card-photo {
-      width: 80px; height: 80px;
-      border-radius: 50%; object-fit: cover;
-      border: 3px solid #e2e8f0;
-      margin: 0 auto 12px;
-      display: block;
-    }
+    .staff-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-color: #3b82f6; }
+    .staff-card-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #e2e8f0; margin: 0 auto 12px; display: block; }
     .staff-card-name { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
     .staff-card-pos { font-size: 12px; color: #64748b; margin-bottom: 12px; }
-    .staff-card-btn {
-      background: #f1f5f9; color: #475569;
-      border: none; border-radius: 8px;
-      padding: 6px 14px; font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
-    }
+    .staff-card-btn { background: #f1f5f9; color: #475569; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
     .staff-card-btn:hover { background: #3b82f6; color: white; }
-    .empty-state {
-      text-align: center; padding: 60px 20px; color: #94a3b8;
-    }
+    .btn-delete-staff { background: none; border: none; color: #cbd5e1; font-size: 14px; cursor: pointer; padding: 4px 8px; border-radius: 6px; margin-top: 4px; }
+    .btn-delete-staff:hover { color: #ef4444; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
 
     /* ===== DETAIL MODAL ===== */
     #detailModal {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
-      z-index: 200;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 20px;
-      overflow-y: auto;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      z-index: 200; align-items: flex-start; justify-content: center;
+      padding: 20px; overflow-y: auto;
     }
     #detailModal.show { display: flex; }
     .modal-box {
-      background: white;
-      border-radius: 20px;
-      width: 100%; max-width: 700px;
-      margin: auto;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      background: white; border-radius: 20px;
+      width: 100%; max-width: 760px; margin: auto;
+      overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
     .modal-header {
       background: linear-gradient(135deg, #0f172a, #1e3a5f);
-      color: white; padding: 24px;
+      color: white; padding: 20px 24px;
       display: flex; align-items: center; gap: 16px;
     }
-    .modal-photo {
-      width: 64px; height: 64px; border-radius: 50%;
-      object-fit: cover; border: 3px solid rgba(255,255,255,0.3);
-      flex-shrink: 0;
-    }
-    .modal-staff-name { font-size: 20px; font-weight: 700; }
+    .modal-photo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.3); flex-shrink: 0; }
+    .modal-staff-name { font-size: 19px; font-weight: 700; }
     .modal-staff-pos { font-size: 13px; color: #94a3b8; margin-top: 2px; }
-    .modal-actions {
-      display: flex; gap: 8px; align-items: center;
-      margin-left: auto;
-    }
+    .modal-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
     .btn-print {
-      background: rgba(255,255,255,0.15);
-      color: white; border: 1px solid rgba(255,255,255,0.2);
-      padding: 8px 16px; border-radius: 8px;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
+      background: rgba(255,255,255,0.15); color: white;
+      border: 1px solid rgba(255,255,255,0.25); padding: 8px 16px;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
     }
     .btn-print:hover { background: rgba(255,255,255,0.25); }
     .btn-close {
-      background: rgba(255,255,255,0.1);
-      color: white; border: none;
-      width: 36px; height: 36px; border-radius: 8px;
-      font-size: 18px; cursor: pointer;
-      transition: background 0.2s;
+      background: rgba(255,255,255,0.1); color: white; border: none;
+      width: 36px; height: 36px; border-radius: 8px; font-size: 18px; cursor: pointer;
     }
-    .btn-close:hover { background: rgba(255,255,255,0.2); }
 
-    .modal-body { padding: 24px; }
-    .records-table { width: 100%; border-collapse: collapse; }
-    .records-table th {
-      text-align: left; font-size: 11px;
-      font-weight: 600; color: #64748b;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      padding: 10px 12px;
-      background: #f8fafc;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    .records-table td {
-      padding: 12px;
+    /* Month Navigation */
+    .month-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px 8px;
       border-bottom: 1px solid #f1f5f9;
-      font-size: 14px;
-      vertical-align: middle;
     }
-    .records-table tr:last-child td { border-bottom: none; }
-    .records-table tr:hover td { background: #f8fafc; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 10px; border-radius: 999px;
-      font-size: 12px; font-weight: 600;
+    .month-label { font-size: 16px; font-weight: 700; color: #1e293b; }
+    .month-btn {
+      background: #f1f5f9; border: none; border-radius: 8px;
+      width: 36px; height: 36px; font-size: 16px; cursor: pointer;
+      color: #475569; transition: background 0.2s;
     }
-    .badge-in { background: #dcfce7; color: #15803d; }
-    .badge-out { background: #fee2e2; color: #dc2626; }
-    .record-photo {
-      width: 40px; height: 40px; border-radius: 8px;
-      object-fit: cover; cursor: pointer;
+    .month-btn:hover { background: #e2e8f0; }
+    .work-summary {
+      font-size: 13px; color: #64748b; background: #f8fafc;
+      padding: 6px 16px; border-radius: 999px;
     }
-    .no-records { text-align: center; padding: 40px; color: #94a3b8; }
 
-    /* Delete button in staff card */
-    .btn-delete-staff {
-      background: none; border: none;
-      color: #cbd5e1; font-size: 14px; cursor: pointer;
-      padding: 4px 8px; border-radius: 6px;
-      margin-top: 4px;
-      transition: color 0.2s;
+    /* Calendar */
+    .modal-body { padding: 16px 24px 24px; }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
     }
-    .btn-delete-staff:hover { color: #ef4444; }
+    .cal-header {
+      text-align: center; font-size: 11px; font-weight: 700;
+      color: #64748b; padding: 8px 0; text-transform: uppercase;
+    }
+    .cal-header.sun { color: #dc2626; }
+    .cal-header.sat { color: #2563eb; }
+    .cal-cell {
+      min-height: 72px; border-radius: 10px; padding: 6px;
+      border: 1px solid #f1f5f9; background: #fafafa;
+      font-size: 12px; position: relative;
+    }
+    .cal-cell.empty { border: none; background: none; }
+    .cal-cell.sun .cal-day { color: #dc2626; }
+    .cal-cell.sat .cal-day { color: #2563eb; }
+    .cal-cell.today { border: 2px solid #3b82f6 !important; background: #eff6ff; }
+    .cal-cell.has-record { background: white; border-color: #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .cal-day { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .cal-time {
+      font-size: 10px; font-weight: 600; padding: 2px 5px;
+      border-radius: 4px; margin-bottom: 2px; white-space: nowrap;
+    }
+    .cal-time.in { background: #dcfce7; color: #15803d; }
+    .cal-time.out { background: #fee2e2; color: #dc2626; }
+    .no-records { text-align: center; padding: 40px; color: #94a3b8; }
 
     /* ===== PRINT STYLES ===== */
     @media print {
-      body { background: white !important; }
-      .header, #detailModal .modal-actions { display: none !important; }
-      #detailModal { position: static !important; background: none !important; padding: 0 !important; }
-      .modal-box { box-shadow: none !important; border-radius: 0 !important; }
-      .modal-header { background: #1e293b !important; -webkit-print-color-adjust: exact; }
+      body * { visibility: hidden; }
+      #detailModal, #detailModal * { visibility: visible; }
+      #detailModal { position: static !important; background: none !important; padding: 0 !important; overflow: visible !important; }
+      .modal-box { box-shadow: none !important; border-radius: 0 !important; max-width: 100% !important; }
+      .modal-header { background: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .btn-print, .btn-close, .month-btn { display: none !important; }
+      .cal-cell.has-record { box-shadow: none !important; }
+      .cal-time.in, .cal-time.out { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -275,17 +212,14 @@
   <div class="content">
     <div class="section-title">スタッフ一覧</div>
     <div class="staff-grid" id="staffGrid">
-      <div class="empty-state">
-        <div class="icon">👥</div>
-        <div>読み込み中...</div>
-      </div>
+      <div class="empty-state"><div class="icon">⏳</div><div>読み込み中...</div></div>
     </div>
   </div>
 </div>
 
 <!-- 詳細モーダル -->
 <div id="detailModal">
-  <div class="modal-box" id="printArea">
+  <div class="modal-box">
     <div class="modal-header">
       <img class="modal-photo" id="modalPhoto" src="" alt="">
       <div>
@@ -293,9 +227,15 @@
         <div class="modal-staff-pos" id="modalPos"></div>
       </div>
       <div class="modal-actions">
+        <span class="work-summary" id="workSummary"></span>
         <button class="btn-print" onclick="printDetail()">🖨️ PDF印刷</button>
         <button class="btn-close" onclick="closeDetail()">✕</button>
       </div>
+    </div>
+    <div class="month-nav">
+      <button class="month-btn" onclick="prevMonth()">◀</button>
+      <span class="month-label" id="monthLabel"></span>
+      <button class="month-btn" onclick="nextMonth()">▶</button>
     </div>
     <div class="modal-body">
       <div id="recordsContainer"></div>
@@ -316,6 +256,8 @@ const firebaseConfig = {
 };
 
 let db;
+let currentViewMonth = new Date();
+let currentStaffRecords = [];
 
 window.addEventListener('load', () => {
   firebase.initializeApp(firebaseConfig);
@@ -350,14 +292,11 @@ function adminLogout() {
 async function loadStaffList() {
   const grid = document.getElementById('staffGrid');
   grid.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><div>読み込み中...</div></div>';
-
-  const snapshot = await db.collection('staff').orderBy('createdAt', 'asc').get();
-
+  const snapshot = await db.collection('staff').get();
   if (snapshot.empty) {
     grid.innerHTML = '<div class="empty-state"><div class="icon">👥</div><div>スタッフが登録されていません<br><a href="register.html" style="color:#3b82f6">＋ メンバーを追加する</a></div></div>';
     return;
   }
-
   grid.innerHTML = '';
   snapshot.forEach(doc => {
     const d = doc.data();
@@ -370,7 +309,7 @@ async function loadStaffList() {
       <div class="staff-card-pos">${d.position || '（役職なし）'}</div>
       <button class="staff-card-btn" onclick="openDetail('${doc.id}')">詳細を見る</button>
       <br>
-      <button class="btn-delete-staff" onclick="deleteStaff('${doc.id}', '${d.name}', event)">🗑 削除</button>
+      <button class="btn-delete-staff" onclick="deleteStaff('${doc.id}','${d.name}',event)">🗑 削除</button>
     `;
     grid.appendChild(card);
   });
@@ -383,86 +322,122 @@ function generateAvatar(name) {
 
 async function deleteStaff(staffId, name, e) {
   e.stopPropagation();
-  if (!confirm(`${name}さんを削除しますか？\n（打刻記録は残ります）`)) return;
+  if (!confirm(`${name}さんを削除しますか？`)) return;
   await db.collection('staff').doc(staffId).delete();
   loadStaffList();
 }
 
 // ============================
-// 詳細モーダル
+// 詳細モーダル（カレンダー表示）
 // ============================
 async function openDetail(staffId) {
   const doc = await db.collection('staff').doc(staffId).get();
   const staff = doc.data();
-
   document.getElementById('modalName').textContent = staff.name;
   document.getElementById('modalPos').textContent = staff.position || '（役職なし）';
   document.getElementById('modalPhoto').src = staff.photoBase64 || generateAvatar(staff.name);
+  document.getElementById('recordsContainer').innerHTML = '<div class="no-records">読み込み中...</div>';
+  document.getElementById('detailModal').classList.add('show');
 
-  // 打刻記録取得（インデックス不要のシンプルなクエリ→JS側でソート）
-  const container = document.getElementById('recordsContainer');
-  container.innerHTML = '<div class="no-records">読み込み中...</div>';
-
-  let allRecords = [];
+  // 全打刻記録取得
   try {
-    const snap = await db.collection('records')
-      .where('staffId', '==', staffId)
-      .get();
-    snap.forEach(r => allRecords.push({ id: r.id, ...r.data() }));
+    const snap = await db.collection('records').where('staffId', '==', staffId).get();
+    currentStaffRecords = [];
+    snap.forEach(r => currentStaffRecords.push({ id: r.id, ...r.data() }));
   } catch(e) {
-    container.innerHTML = '<div class="no-records">記録の取得に失敗しました</div>';
-    console.error(e);
-    document.getElementById('detailModal').classList.add('show');
+    document.getElementById('recordsContainer').innerHTML = '<div class="no-records">記録の取得に失敗しました</div>';
     return;
   }
 
-  // 新しい順にソート
-  allRecords.sort((a, b) => {
-    const ta = a.timestamp ? a.timestamp.toMillis() : 0;
-    const tb = b.timestamp ? b.timestamp.toMillis() : 0;
-    return tb - ta;
-  });
-
-  if (allRecords.length === 0) {
-    container.innerHTML = '<div class="no-records">打刻記録がありません</div>';
-  } else {
-    let html = `
-      <table class="records-table">
-        <thead>
-          <tr>
-            <th>日付</th>
-            <th>時刻</th>
-            <th>種別</th>
-            <th>写真</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-    allRecords.forEach(d => {
-      const ts = d.timestamp ? d.timestamp.toDate() : new Date();
-      const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-      const dateStr = `${jst.getFullYear()}/${jst.getMonth()+1}/${jst.getDate()}`;
-      const days = ['日','月','火','水','木','金','土'];
-      const dayStr = days[jst.getDay()];
-      const timeStr = `${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')}`;
-      const badge = d.type === 'in'
-        ? '<span class="badge badge-in">▲ 出勤</span>'
-        : '<span class="badge badge-out">▼ 退勤</span>';
-      const photo = d.photoBase64
-        ? `<img class="record-photo" src="${d.photoBase64}" onclick="showPhoto(this.src)">`
-        : '—';
-      html += `<tr>
-        <td>${dateStr}（${dayStr}）</td>
-        <td><strong>${timeStr}</strong></td>
-        <td>${badge}</td>
-        <td>${photo}</td>
-      </tr>`;
+  // 最新の記録がある月を初期表示
+  if (currentStaffRecords.length > 0) {
+    const latest = currentStaffRecords.reduce((a, b) => {
+      const ta = a.timestamp ? a.timestamp.toMillis() : 0;
+      const tb = b.timestamp ? b.timestamp.toMillis() : 0;
+      return tb > ta ? b : a;
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    if (latest.timestamp) {
+      const d = latest.timestamp.toDate();
+      currentViewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    } else {
+      currentViewMonth = new Date();
+    }
+  } else {
+    currentViewMonth = new Date();
   }
 
-  document.getElementById('detailModal').classList.add('show');
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = currentViewMonth.getFullYear();
+  const month = currentViewMonth.getMonth();
+  document.getElementById('monthLabel').textContent = `${year}年${month + 1}月`;
+
+  // 日付ごとに出勤・退勤をまとめる
+  const byDate = {};
+  currentStaffRecords.forEach(r => {
+    if (!r.timestamp) return;
+    const ts = r.timestamp.toDate();
+    const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    if (jst.getFullYear() !== year || jst.getMonth() !== month) return;
+    const key = jst.getDate();
+    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [] };
+    const hm = `${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')}`;
+    if (r.type === 'in') byDate[key].inTimes.push(hm);
+    else byDate[key].outTimes.push(hm);
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const dayNames = ['日','月','火','水','木','金','土'];
+  const today = new Date();
+
+  let html = '<div class="cal-grid">';
+  dayNames.forEach((d, i) => {
+    const cls = i === 0 ? 'sun' : i === 6 ? 'sat' : '';
+    html += `<div class="cal-header ${cls}">${d}</div>`;
+  });
+
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = (firstDay + d - 1) % 7;
+    const rec = byDate[d];
+    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+    let cls = 'cal-cell';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (isToday) cls += ' today';
+    if (rec) cls += ' has-record';
+    html += `<div class="${cls}"><div class="cal-day">${d}</div>`;
+    if (rec) {
+      if (rec.inTimes.length > 0) {
+        const earliest = rec.inTimes.sort()[0];
+        html += `<div class="cal-time in">出 ${earliest}</div>`;
+      }
+      if (rec.outTimes.length > 0) {
+        const latest = rec.outTimes.sort().pop();
+        html += `<div class="cal-time out">退 ${latest}</div>`;
+      }
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('recordsContainer').innerHTML = html;
+
+  const workDays = Object.keys(byDate).length;
+  document.getElementById('workSummary').textContent = `${month + 1}月：出勤 ${workDays}日`;
+}
+
+function prevMonth() {
+  currentViewMonth = new Date(currentViewMonth.getFullYear(), currentViewMonth.getMonth() - 1, 1);
+  renderCalendar();
+}
+
+function nextMonth() {
+  currentViewMonth = new Date(currentViewMonth.getFullYear(), currentViewMonth.getMonth() + 1, 1);
+  renderCalendar();
 }
 
 function closeDetail() {
@@ -473,13 +448,7 @@ function printDetail() {
   window.print();
 }
 
-function showPhoto(src) {
-  const w = window.open('', '_blank', 'width=400,height=350');
-  w.document.write(`<img src="${src}" style="width:100%;height:100%;object-fit:contain;background:#000">`);
-}
-
-// モーダル外クリックで閉じる
-document.getElementById('detailModal')?.addEventListener('click', function(e) {
+document.getElementById('detailModal').addEventListener('click', function(e) {
   if (e.target === this) closeDetail();
 });
 </script>
