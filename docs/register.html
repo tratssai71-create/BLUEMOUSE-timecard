@@ -435,17 +435,20 @@ async function capturePhoto() {
     return;
   }
 
-  // プロフィール写真（顔を中心に余白を広めにとってクロップ）
+  // 顔を出力画像の中央に配置してクロップ
   const face = detection.detection.box;
   const faceCenterX = face.x + face.width / 2;
   const faceCenterY = face.y + face.height / 2;
-  const cropSize = Math.max(face.width, face.height) * 3.5; // 顔サイズの3.5倍の範囲
-  const x = Math.max(0, faceCenterX - cropSize / 2);
-  const y = Math.max(0, faceCenterY - cropSize / 2.2); // 少し上寄りに
-  const size = Math.min(cropSize, canvas.width - x, canvas.height - y);
+  // クロップサイズは顔サイズの4倍（画像サイズを超えないよう制限）
+  const cropSize = Math.min(Math.max(face.width, face.height) * 4.0, canvas.width, canvas.height);
+  // 顔の中心がクロップの中心になるよう計算し、境界内に収める
+  let cropX = faceCenterX - cropSize / 2;
+  let cropY = faceCenterY - cropSize / 2;
+  cropX = Math.max(0, Math.min(cropX, canvas.width - cropSize));
+  cropY = Math.max(0, Math.min(cropY, canvas.height - cropSize));
   const cropCanvas = document.createElement('canvas');
   cropCanvas.width = 300; cropCanvas.height = 300;
-  cropCanvas.getContext('2d').drawImage(canvas, x, y, size, size, 0, 0, 300, 300);
+  cropCanvas.getContext('2d').drawImage(canvas, cropX, cropY, cropSize, cropSize, 0, 0, 300, 300);
   photoBase64 = cropCanvas.toDataURL('image/jpeg', 0.8);
   faceDescriptor = Array.from(detection.descriptor);
 
