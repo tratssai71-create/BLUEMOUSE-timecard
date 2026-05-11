@@ -232,6 +232,39 @@
     }
     .day-no-record .icon { font-size: 24px; }
 
+    /* 記録の編集・削除 */
+    .record-time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .record-actions { display: flex; gap: 5px; margin-left: auto; }
+    .btn-rec-edit {
+      font-size: 11px; padding: 3px 8px; border-radius: 6px;
+      background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; cursor: pointer;
+    }
+    .btn-rec-edit:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+    .btn-rec-delete {
+      font-size: 11px; padding: 3px 8px; border-radius: 6px;
+      background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; cursor: pointer;
+    }
+    .btn-rec-delete:hover { background: #ef4444; color: white; border-color: #ef4444; }
+    .edit-form {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 10px; margin-bottom: 10px;
+    }
+    .time-input {
+      width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px;
+      font-size: 18px; font-weight: 700; color: #1e293b; background: white;
+      margin-bottom: 8px; outline: none;
+    }
+    .time-input:focus { border-color: #3b82f6; }
+    .edit-btns { display: flex; gap: 8px; }
+    .btn-save-time {
+      flex: 1; padding: 7px; border-radius: 8px; border: none;
+      background: #2563eb; color: white; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-cancel-time {
+      flex: 1; padding: 7px; border-radius: 8px; font-size: 13px; cursor: pointer;
+      background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+    }
+
     /* ===== PHOTO FULLSCREEN ===== */
     #photoFullModal {
       display: none; position: fixed; inset: 0;
@@ -360,6 +393,7 @@ let db;
 let currentViewMonth = new Date();
 let currentStaffRecords = [];
 let currentStaffData = null;
+let currentDayOpen = null;
 
 window.addEventListener('load', () => {
   firebase.initializeApp(firebaseConfig);
@@ -576,6 +610,7 @@ document.getElementById('detailModal').addEventListener('click', function(e) {
 // 日付詳細モーダル（写真表示）
 // ============================
 function openDayDetail(day) {
+  currentDayOpen = day;
   const year = currentViewMonth.getFullYear();
   const month = currentViewMonth.getMonth();
   const dayNames = ['日','月','火','水','木','金','土'];
@@ -622,8 +657,63 @@ function buildDayRecord(record, type, label) {
     : `<div class="day-photo-wrap"><div class="day-no-photo"><span class="icon">📷</span><span>写真なし</span></div></div>`;
 
   return `<span class="day-record-label ${type}">${label}</span>
-    <div class="day-record-time">${hm}</div>
+    <div class="record-time-row">
+      <div class="day-record-time">${hm}</div>
+      <div class="record-actions">
+        <button class="btn-rec-edit" onclick="showEditForm('${record.id}','${hm}')">✏️ 編集</button>
+        <button class="btn-rec-delete" onclick="deleteRecord('${record.id}')">🗑 削除</button>
+      </div>
+    </div>
+    <div class="edit-form" id="edit-form-${record.id}" style="display:none">
+      <input type="time" class="time-input" id="time-input-${record.id}" value="${hm}">
+      <div class="edit-btns">
+        <button class="btn-save-time" onclick="saveRecordTime('${record.id}')">保存</button>
+        <button class="btn-cancel-time" onclick="hideEditForm('${record.id}')">キャンセル</button>
+      </div>
+    </div>
     ${photoHtml}`;
+}
+
+function showEditForm(recordId, currentHM) {
+  document.getElementById(`edit-form-${recordId}`).style.display = 'block';
+  document.getElementById(`time-input-${recordId}`).value = currentHM;
+}
+
+function hideEditForm(recordId) {
+  document.getElementById(`edit-form-${recordId}`).style.display = 'none';
+}
+
+async function deleteRecord(recordId) {
+  if (!confirm('この記録を削除しますか？')) return;
+  await db.collection('records').doc(recordId).delete();
+  currentStaffRecords = currentStaffRecords.filter(r => r.id !== recordId);
+  renderCalendar();
+  openDayDetail(currentDayOpen);
+}
+
+async function saveRecordTime(recordId) {
+  const newHM = document.getElementById(`time-input-${recordId}`).value;
+  if (!newHM) return;
+
+  const record = currentStaffRecords.find(r => r.id === recordId);
+  if (!record || !record.timestamp) return;
+
+  const ts = record.timestamp.toDate();
+  const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const [newH, newM] = newHM.split(':').map(Number);
+
+  // JST日付 + 新しい時刻 → UTC Timestampに変換
+  const dateStr = `${jst.getFullYear()}-${String(jst.getMonth()+1).padStart(2,'0')}-${String(jst.getDate()).padStart(2,'0')}T${String(newH).padStart(2,'0')}:${String(newM).padStart(2,'0')}:00+09:00`;
+  const newDate = new Date(dateStr);
+
+  await db.collection('records').doc(recordId).update({
+    timestamp: firebase.firestore.Timestamp.fromDate(newDate)
+  });
+
+  // ローカルデータも更新
+  record.timestamp = firebase.firestore.Timestamp.fromDate(newDate);
+  renderCalendar();
+  openDayDetail(currentDayOpen);
 }
 
 function closeDayModal() {
