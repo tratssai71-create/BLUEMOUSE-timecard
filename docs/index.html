@@ -211,32 +211,85 @@
       align-items: center; justify-content: center;
       flex-direction: column;
       text-align: center; padding: 40px 20px;
+      position: relative; overflow: hidden;
     }
-    #thanksInScreen { background: linear-gradient(135deg, #064e3b, #065f46); }
-    #thanksOutScreen { background: linear-gradient(135deg, #1e1b4b, #312e81); }
-    .thanks-icon { font-size: 80px; margin-bottom: 24px; }
+    #thanksInScreen {
+      background: #071a10;
+    }
+    #thanksInScreen::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(16,185,129,0.25) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    #thanksOutScreen {
+      background: #080d1f;
+    }
+    #thanksOutScreen::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(99,102,241,0.25) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .thanks-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+      padding: 6px 18px; border-radius: 999px;
+      margin-bottom: 32px; text-transform: uppercase;
+      position: relative;
+    }
+    .thanks-badge.in {
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.4);
+      color: #34d399;
+    }
+    .thanks-badge.out {
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.4);
+      color: #a5b4fc;
+    }
+    .thanks-photo-wrap {
+      position: relative; width: 148px; height: 148px;
+      margin: 0 auto 28px;
+    }
     .thanks-staff-photo {
-      width: 100px; height: 100px; border-radius: 50%;
+      width: 136px; height: 136px; border-radius: 50%;
       object-fit: cover;
-      border: 3px solid rgba(255,255,255,0.4);
-      margin-bottom: 20px;
+      border: 4px solid rgba(255,255,255,0.15);
+      position: absolute; top: 6px; left: 6px;
     }
-    .thanks-name { font-size: 28px; font-weight: 700; color: #f8fafc; margin-bottom: 12px; }
-    .thanks-message { font-size: 22px; color: rgba(255,255,255,0.85); margin-bottom: 16px; font-weight: 500; }
-    .thanks-time { font-size: 15px; color: rgba(255,255,255,0.5); }
+    .thanks-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      animation: ring-expand 2s ease-out infinite;
+    }
+    .in .thanks-ring { border: 2px solid rgba(52,211,153,0.7); }
+    .out .thanks-ring { border: 2px solid rgba(129,140,248,0.7); }
+    @keyframes ring-expand {
+      0%   { transform: scale(0.88); opacity: 0; }
+      30%  { opacity: 1; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+    .thanks-name {
+      font-size: 32px; font-weight: 800; color: #f8fafc;
+      margin-bottom: 10px; letter-spacing: -0.5px;
+    }
+    .thanks-message {
+      font-size: 17px; color: rgba(255,255,255,0.6);
+      margin-bottom: 28px; font-weight: 500;
+    }
+    .thanks-time {
+      font-size: 13px; color: rgba(255,255,255,0.3);
+      letter-spacing: 0.5px;
+    }
     .thanks-bar {
-      width: 200px; height: 4px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 2px;
-      margin-top: 32px;
-      overflow: hidden;
+      width: 180px; height: 2px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px; margin-top: 36px; overflow: hidden;
     }
     .thanks-bar-fill {
-      height: 100%; background: white;
-      border-radius: 2px;
-      width: 0%;
+      height: 100%; width: 0%; border-radius: 2px;
       transition: width 5s linear;
     }
+    #thanksInScreen .thanks-bar-fill { background: #34d399; }
+    #thanksOutScreen .thanks-bar-fill { background: #818cf8; }
 
     /* Loading overlay */
     #loadingOverlay {
@@ -343,8 +396,11 @@
 
   <!-- サンクス画面（出勤） -->
   <div id="thanksInScreen" class="thanks-screen">
-    <div class="thanks-icon">🌅</div>
-    <img class="thanks-staff-photo" id="thanksInPhoto" src="" alt="">
+    <div class="thanks-badge in">✓ &nbsp;出勤完了</div>
+    <div class="thanks-photo-wrap in">
+      <div class="thanks-ring"></div>
+      <img class="thanks-staff-photo" id="thanksInPhoto" src="" alt="">
+    </div>
     <div class="thanks-name" id="thanksInName"></div>
     <div class="thanks-message">今日も1日頑張りましょう！</div>
     <div class="thanks-time" id="thanksInTime"></div>
@@ -353,8 +409,11 @@
 
   <!-- サンクス画面（退勤） -->
   <div id="thanksOutScreen" class="thanks-screen">
-    <div class="thanks-icon">🌙</div>
-    <img class="thanks-staff-photo" id="thanksOutPhoto" src="" alt="">
+    <div class="thanks-badge out">✓ &nbsp;退勤完了</div>
+    <div class="thanks-photo-wrap out">
+      <div class="thanks-ring"></div>
+      <img class="thanks-staff-photo" id="thanksOutPhoto" src="" alt="">
+    </div>
     <div class="thanks-name" id="thanksOutName"></div>
     <div class="thanks-message">今日も1日お疲れ様でした！</div>
     <div class="thanks-time" id="thanksOutTime"></div>
