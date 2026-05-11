@@ -9,7 +9,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
 
     /* ===== LOGIN SCREEN ===== */
     #loginScreen {
@@ -96,8 +96,7 @@
     .topbar {
       position: fixed; top: 0; left: 0; right: 0;
       height: 56px;
-      background: rgba(15,23,42,0.9);
-      backdrop-filter: blur(20px);
+      background: #0f172a;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex; align-items: center; padding: 0 16px;
       z-index: 50;
@@ -109,22 +108,22 @@
       transition: background 0.2s;
     }
     .menu-btn:hover { background: rgba(255,255,255,0.1); }
-    .topbar-logo { height: 44px; width: auto; margin-left: 12px; }
-    .topbar-title { font-size: 15px; font-weight: 600; margin-left: 12px; color: #e2e8f0; }
+    .topbar-logo { height: 36px; width: auto; margin-left: 12px; display: block; }
+    .topbar a { display: flex; align-items: center; line-height: 0; }
 
     /* Clock Screen */
     #clockScreen {
       padding-top: 56px;
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center;
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      background: #f1f5f9;
     }
 
     .clock-time-section {
       text-align: center; padding: 32px 20px 24px;
     }
-    .clock-time { font-size: 56px; font-weight: 200; letter-spacing: 4px; color: #f8fafc; }
-    .clock-date { font-size: 15px; color: #94a3b8; margin-top: 6px; }
+    .clock-time { font-size: 56px; font-weight: 300; letter-spacing: 4px; color: #0f172a; }
+    .clock-date { font-size: 15px; color: #64748b; margin-top: 6px; }
 
     /* Camera */
     .camera-wrapper {
@@ -133,14 +132,14 @@
       border-radius: 20px;
       overflow: hidden;
       background: #1e293b;
-      border: 2px solid rgba(255,255,255,0.1);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
     }
     #video { width: 100%; display: block; border-radius: 18px; }
     #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .camera-status {
       text-align: center; padding: 10px 16px;
       font-size: 13px; color: #94a3b8;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.4);
     }
     .face-detecting { color: #fbbf24; }
     .face-recognized { color: #34d399; }
@@ -149,31 +148,32 @@
     #profileCard {
       display: none;
       width: min(400px, 90vw);
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(52,211,153,0.3);
+      background: white;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
       padding: 16px;
       margin-top: 16px;
       flex-direction: row;
       align-items: center;
       gap: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
       animation: slideIn 0.3s ease;
     }
     @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     #staffPhotoEl {
       width: 64px; height: 64px; border-radius: 50%;
       object-fit: cover;
-      border: 2px solid #34d399;
+      border: 2px solid #10b981;
       flex-shrink: 0;
     }
     .profile-info { flex: 1; }
-    .profile-name { font-size: 18px; font-weight: 700; color: #f8fafc; }
-    .profile-position { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .profile-name { font-size: 18px; font-weight: 700; color: #0f172a; }
+    .profile-position { font-size: 13px; color: #64748b; margin-top: 2px; }
     .auth-badge {
       display: inline-flex; align-items: center; gap: 4px;
-      background: rgba(52,211,153,0.15);
-      border: 1px solid rgba(52,211,153,0.4);
-      color: #34d399;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
       font-size: 11px; font-weight: 600;
       padding: 3px 10px; border-radius: 999px;
       margin-top: 6px;
@@ -187,24 +187,22 @@
     }
     .btn-clock {
       flex: 1; padding: 20px;
-      border-radius: 16px; border: none;
+      border-radius: 14px; border: none;
       font-size: 20px; font-weight: 700;
       cursor: pointer;
       transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
     }
-    .btn-clock:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+    .btn-clock:disabled { opacity: 0.25; cursor: not-allowed; transform: none !important; }
     .btn-clock:not(:disabled):hover { transform: translateY(-2px); }
     .btn-clock:not(:disabled):active { transform: translateY(0); }
     #btnIn {
-      background: linear-gradient(135deg, #059669, #047857);
-      color: white; box-shadow: 0 4px 20px rgba(5,150,105,0.3);
+      background: #16a34a;
+      color: white; box-shadow: 0 2px 12px rgba(22,163,74,0.3);
     }
     #btnOut {
-      background: linear-gradient(135deg, #dc2626, #b91c1c);
-      color: white; box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+      background: #dc2626;
+      color: white; box-shadow: 0 2px 12px rgba(220,38,38,0.3);
     }
-    #btnIn:not(:disabled) { box-shadow: 0 4px 20px rgba(5,150,105,0.4); }
-    #btnOut:not(:disabled) { box-shadow: 0 4px 20px rgba(220,38,38,0.4); }
 
     /* Thanks Screens */
     .thanks-screen {
