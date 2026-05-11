@@ -108,14 +108,41 @@
       border: 2px dashed rgba(52,211,153,0.9);
       border-radius: 50%;
       animation: pulse-guide 2s ease-in-out infinite;
+      position: relative;
     }
     @keyframes pulse-guide {
       0%, 100% { box-shadow: 0 0 16px rgba(52,211,153,0.25); border-color: rgba(52,211,153,0.9); }
       50%       { box-shadow: 0 0 28px rgba(52,211,153,0.5); border-color: rgba(52,211,153,1); }
     }
+    /* 中央の十字＋丸マーカー */
+    .face-crosshair {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0; height: 0;
+    }
+    .cross-h {
+      position: absolute; width: 28px; height: 2px;
+      background: rgba(255,255,255,0.75);
+      top: 0; left: 0; transform: translate(-50%, -50%);
+      border-radius: 1px;
+    }
+    .cross-v {
+      position: absolute; width: 2px; height: 28px;
+      background: rgba(255,255,255,0.75);
+      top: 0; left: 0; transform: translate(-50%, -50%);
+      border-radius: 1px;
+    }
+    .cross-dot {
+      position: absolute; width: 10px; height: 10px;
+      border-radius: 50%;
+      background: rgba(52,211,153,1);
+      border: 2px solid white;
+      top: 0; left: 0; transform: translate(-50%, -50%);
+      box-shadow: 0 0 6px rgba(52,211,153,0.8);
+    }
     .face-guide-label {
-      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 600;
-      background: rgba(0,0,0,0.45); padding: 5px 14px;
+      color: rgba(255,255,255,0.95); font-size: 12px; font-weight: 600;
+      background: rgba(0,0,0,0.5); padding: 5px 14px;
       border-radius: 999px; letter-spacing: 0.5px;
     }
 
@@ -251,8 +278,14 @@
           <span class="corner br"></span>
         </div>
         <div class="face-guide-wrap" id="faceGuide">
-          <div class="face-guide"></div>
-          <div class="face-guide-label">顔をここに合わせてください</div>
+          <div class="face-guide">
+            <div class="face-crosshair">
+              <div class="cross-h"></div>
+              <div class="cross-v"></div>
+              <div class="cross-dot"></div>
+            </div>
+          </div>
+          <div class="face-guide-label">🔴 鼻をここに合わせてください</div>
         </div>
       </div>
     </div>
