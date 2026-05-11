@@ -26,7 +26,8 @@
       width: 380px;
       text-align: center;
     }
-    .login-logo { font-size: 48px; margin-bottom: 8px; }
+    .login-logo { margin-bottom: 16px; }
+    .login-logo img { width: 160px; height: auto; }
     .login-brand { font-size: 22px; font-weight: 700; color: #60a5fa; letter-spacing: 2px; margin-bottom: 4px; }
     .login-subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 32px; }
     .login-time {
@@ -74,7 +75,7 @@
     }
     #sidebar.open { transform: translateX(0); }
     .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .sidebar-logo .brand { font-size: 14px; font-weight: 700; color: #60a5fa; letter-spacing: 1px; }
+    .sidebar-logo img { width: 110px; height: auto; margin-bottom: 4px; }
     .sidebar-logo .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
     .sidebar-nav { padding: 16px 0; }
     .sidebar-link {
@@ -268,8 +269,7 @@
 <!-- ログイン画面 -->
 <div id="loginScreen" style="display:none">
   <div class="login-box">
-    <div class="login-logo">🐭</div>
-    <div class="login-brand">BLUE MOUSE</div>
+    <div class="login-logo"><img src="logo.webp" alt="BLUE MOUSE"></div>
     <div class="login-subtitle">タイムカードシステム</div>
     <div class="login-time" id="loginTime">--:--:--</div>
     <div class="login-date" id="loginDate"></div>
@@ -288,7 +288,7 @@
   <!-- サイドバー -->
   <div id="sidebar">
     <div class="sidebar-logo">
-      <div class="brand">🐭 BLUE MOUSE</div>
+      <img src="logo.webp" alt="BLUE MOUSE">
       <div class="sub">タイムカードシステム</div>
     </div>
     <nav class="sidebar-nav">

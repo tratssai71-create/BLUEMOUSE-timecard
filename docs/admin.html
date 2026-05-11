@@ -21,7 +21,8 @@
       border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
       padding: 48px 40px; width: 380px; text-align: center;
     }
-    .login-logo { font-size: 48px; margin-bottom: 8px; }
+    .login-logo { margin-bottom: 16px; }
+    .login-logo img { width: 160px; height: auto; }
     .login-brand { font-size: 20px; font-weight: 700; color: #60a5fa; letter-spacing: 2px; }
     .login-subtitle { font-size: 13px; color: #94a3b8; margin: 6px 0 32px; }
     .login-input {
@@ -47,7 +48,7 @@
       position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-logo { font-size: 18px; font-weight: 700; color: #60a5fa; }
+    .header-logo img { height: 28px; width: auto; }
     .header-title { font-size: 15px; color: #94a3b8; }
     .header-right { display: flex; align-items: center; gap: 12px; }
     .btn-add {
@@ -183,8 +184,7 @@
 <!-- ログイン画面 -->
 <div id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">⚙️</div>
-    <div class="login-brand">BLUE MOUSE</div>
+    <div class="login-logo"><img src="logo.webp" alt="BLUE MOUSE"></div>
     <div class="login-subtitle">管理者ページ</div>
     <input type="password" class="login-input" id="adminPassword"
       placeholder="管理者パスワード" onkeydown="if(event.key==='Enter')adminLogin()">
@@ -200,7 +200,7 @@
 <div id="mainApp">
   <div class="header">
     <div class="header-left">
-      <span class="header-logo">🐭 BLUE MOUSE</span>
+      <span class="header-logo"><img src="logo.webp" alt="BLUE MOUSE"></span>
       <span class="header-title">管理者ページ</span>
     </div>
     <div class="header-right">
