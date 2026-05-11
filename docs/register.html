@@ -86,12 +86,37 @@
       display: flex; align-items: center; justify-content: center;
       pointer-events: none;
     }
+
+    /* コーナーブラケット */
+    .cam-corners { position: absolute; inset: 14px; }
+    .corner {
+      position: absolute; width: 22px; height: 22px;
+      border-color: rgba(255,255,255,0.55); border-style: solid;
+    }
+    .corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+    /* 顔ガイド */
+    .face-guide-wrap {
+      display: none; flex-direction: column;
+      align-items: center; gap: 12px;
+    }
     .face-guide {
-      width: 200px; height: 240px;
-      border: 3px solid rgba(52,211,153,0.6);
+      width: 190px; height: 235px;
+      border: 2px dashed rgba(52,211,153,0.9);
       border-radius: 50%;
-      box-shadow: 0 0 0 4px rgba(52,211,153,0.2);
-      display: none;
+      animation: pulse-guide 2s ease-in-out infinite;
+    }
+    @keyframes pulse-guide {
+      0%, 100% { box-shadow: 0 0 16px rgba(52,211,153,0.25); border-color: rgba(52,211,153,0.9); }
+      50%       { box-shadow: 0 0 28px rgba(52,211,153,0.5); border-color: rgba(52,211,153,1); }
+    }
+    .face-guide-label {
+      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 600;
+      background: rgba(0,0,0,0.45); padding: 5px 14px;
+      border-radius: 999px; letter-spacing: 0.5px;
     }
 
     .camera-controls { display: flex; gap: 12px; margin-bottom: 16px; }
@@ -219,7 +244,16 @@
       <video id="regVideo" autoplay muted playsinline></video>
       <img id="capturedImg" src="" alt="撮影した写真">
       <div class="camera-overlay">
-        <div class="face-guide" id="faceGuide"></div>
+        <div class="cam-corners">
+          <span class="corner tl"></span>
+          <span class="corner tr"></span>
+          <span class="corner bl"></span>
+          <span class="corner br"></span>
+        </div>
+        <div class="face-guide-wrap" id="faceGuide">
+          <div class="face-guide"></div>
+          <div class="face-guide-label">顔をここに合わせてください</div>
+        </div>
       </div>
     </div>
 
@@ -324,7 +358,7 @@ async function startCamera() {
     document.getElementById('cameraPlaceholder').style.display = 'none';
     document.getElementById('capturedImg').style.display = 'none';
     video.style.display = 'block';
-    document.getElementById('faceGuide').style.display = 'block';
+    document.getElementById('faceGuide').style.display = 'flex';
     document.getElementById('btnStartCamera').style.display = 'none';
     document.getElementById('btnCapture').disabled = false;
     document.getElementById('btnRetake').style.display = 'none';
