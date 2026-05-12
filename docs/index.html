@@ -308,6 +308,24 @@
     }
     #thanksInScreen .thanks-bar-fill { background: #34d399; }
     #thanksOutScreen .thanks-bar-fill { background: #818cf8; }
+    #thanksBreakInScreen {
+      background: #1a1100;
+    }
+    #thanksBreakInScreen::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(217,119,6,0.28) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    #thanksBreakInScreen .thanks-bar-fill { background: #f59e0b; }
+    #thanksBreakOutScreen {
+      background: #00101a;
+    }
+    #thanksBreakOutScreen::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(2,132,199,0.28) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    #thanksBreakOutScreen .thanks-bar-fill { background: #38bdf8; }
 
     /* Fraud Screen */
     #fraudScreen {

@@ -200,6 +200,8 @@
     }
     .cal-time.in { background: #dcfce7; color: #15803d; }
     .cal-time.out { background: #fee2e2; color: #dc2626; }
+    .cal-time.break_in { background: #fef3c7; color: #b45309; }
+    .cal-time.break_out { background: #dbeafe; color: #1d4ed8; }
     .cal-duration {
       font-size: 9px; color: #94a3b8; margin-top: 4px;
     }
@@ -230,35 +232,41 @@
     .day-title { font-size: 15px; font-weight: 700; }
     .day-subtitle { font-size: 12px; color: #94a3b8; margin-top: 2px; }
     .btn-day-close { background: rgba(255,255,255,0.1); color: white; border: none; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    .day-body { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .day-record { }
+    .day-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; }
+    .day-record {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 14px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .day-record-left { flex: 1; min-width: 0; }
     .day-record-label {
-      font-size: 11px; font-weight: 700; padding: 4px 10px;
-      border-radius: 6px; margin-bottom: 10px; display: inline-block;
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 6px; margin-bottom: 8px; display: inline-block;
     }
     .day-record-label.in { background: #dcfce7; color: #15803d; }
     .day-record-label.out { background: #fee2e2; color: #dc2626; }
+    .day-record-label.break_in { background: #fef3c7; color: #b45309; }
+    .day-record-label.break_out { background: #dbeafe; color: #1d4ed8; }
     .day-record-time { font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
     .day-photo-wrap {
-      width: 100%; aspect-ratio: 4/3; border-radius: 12px;
-      overflow: hidden; background: #f1f5f9; position: relative;
+      width: 90px; height: 90px; border-radius: 10px; flex-shrink: 0;
+      overflow: hidden; background: #e2e8f0;
     }
     .day-photo-wrap img {
       width: 100%; height: 100%; object-fit: cover; cursor: zoom-in;
       transition: transform 0.2s;
     }
-    .day-photo-wrap img:hover { transform: scale(1.03); }
+    .day-photo-wrap img:hover { transform: scale(1.05); }
     .day-no-photo {
       width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; color: #94a3b8; flex-direction: column; gap: 6px;
+      font-size: 11px; color: #94a3b8; flex-direction: column; gap: 4px;
     }
-    .day-no-photo .icon { font-size: 28px; }
+    .day-no-photo .icon { font-size: 20px; }
     .day-no-record {
-      display: flex; align-items: center; justify-content: center;
-      height: 140px; font-size: 13px; color: #cbd5e1;
-      border: 2px dashed #e2e8f0; border-radius: 12px; flex-direction: column; gap: 6px;
+      flex: 1; display: flex; align-items: center;
+      font-size: 13px; color: #cbd5e1; gap: 6px;
     }
-    .day-no-record .icon { font-size: 24px; }
+    .day-no-record .icon { font-size: 18px; }
 
     /* 記録の編集・削除 */
     .record-time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -402,6 +410,8 @@
     </div>
     <div class="day-body">
       <div class="day-record" id="dayModalIn"></div>
+      <div class="day-record" id="dayModalBreakIn"></div>
+      <div class="day-record" id="dayModalBreakOut"></div>
       <div class="day-record" id="dayModalOut"></div>
     </div>
   </div>
@@ -597,10 +607,12 @@ function renderCalendar() {
     const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jst.getFullYear() !== year || jst.getMonth() !== month) return;
     const key = jst.getDate();
-    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [], hasPhoto: false };
+    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [], breakInTimes: [], breakOutTimes: [], hasPhoto: false };
     const hm = `${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')}`;
     if (r.type === 'in') byDate[key].inTimes.push(hm);
-    else byDate[key].outTimes.push(hm);
+    else if (r.type === 'out') byDate[key].outTimes.push(hm);
+    else if (r.type === 'break_in') byDate[key].breakInTimes.push(hm);
+    else if (r.type === 'break_out') byDate[key].breakOutTimes.push(hm);
     if (r.photoBase64) byDate[key].hasPhoto = true;
   });
 
@@ -631,15 +643,10 @@ function renderCalendar() {
     html += `<div class="${cls}" ${clickAttr}><div class="cal-day">${d}</div>`;
 
     if (rec) {
-      if (rec.inTimes.length > 0) {
-        const earliest = rec.inTimes.sort()[0];
-        html += `<div class="cal-time in">▲ ${earliest}</div>`;
-      }
-      if (rec.outTimes.length > 0) {
-        const latest = rec.outTimes.slice().sort().pop();
-        html += `<div class="cal-time out">▼ ${latest}</div>`;
-      }
-      // 勤務時間を計算して表示
+      if (rec.inTimes.length > 0)       html += `<div class="cal-time in">▲ ${rec.inTimes.sort()[0]}</div>`;
+      if (rec.breakInTimes.length > 0)  html += `<div class="cal-time break_in">☕ ${rec.breakInTimes.sort()[0]}</div>`;
+      if (rec.breakOutTimes.length > 0) html += `<div class="cal-time break_out">↩ ${rec.breakOutTimes.sort()[0]}</div>`;
+      if (rec.outTimes.length > 0)      html += `<div class="cal-time out">▼ ${rec.outTimes.slice().sort().pop()}</div>`;
       if (rec.inTimes.length > 0 && rec.outTimes.length > 0) {
         const inMin = timeToMin(rec.inTimes.sort()[0]);
         const outMin = timeToMin(rec.outTimes.slice().sort().pop());
@@ -713,19 +720,25 @@ function openDayDetail(day) {
     return ta - tb;
   });
 
-  const inRecord  = dayRecords.find(r => r.type === 'in');
-  const outRecord = dayRecords.find(r => r.type === 'out');
+  const inRecord       = dayRecords.find(r => r.type === 'in');
+  const outRecord      = dayRecords.find(r => r.type === 'out');
+  const breakInRecord  = dayRecords.find(r => r.type === 'break_in');
+  const breakOutRecord = dayRecords.find(r => r.type === 'break_out');
 
-  document.getElementById('dayModalIn').innerHTML  = buildDayRecord(inRecord,  'in',  '出勤');
-  document.getElementById('dayModalOut').innerHTML = buildDayRecord(outRecord, 'out', '退勤');
+  document.getElementById('dayModalIn').innerHTML       = buildDayRecord(inRecord,       'in',       '出勤');
+  document.getElementById('dayModalBreakIn').innerHTML  = buildDayRecord(breakInRecord,  'break_in',  '休憩開始');
+  document.getElementById('dayModalBreakOut').innerHTML = buildDayRecord(breakOutRecord, 'break_out', '休憩終了');
+  document.getElementById('dayModalOut').innerHTML      = buildDayRecord(outRecord,      'out',      '退勤');
 
   document.getElementById('dayModal').classList.add('show');
 }
 
 function buildDayRecord(record, type, label) {
   if (!record) {
-    return `<span class="day-record-label ${type}">${label}</span>
-      <div class="day-no-record"><span class="icon">—</span><span>記録なし</span></div>`;
+    return `<div class="day-record-left">
+      <span class="day-record-label ${type}">${label}</span>
+      <div class="day-no-record"><span class="icon">—</span><span>記録なし</span></div>
+    </div>`;
   }
 
   const ts = record.timestamp.toDate();
@@ -734,9 +747,10 @@ function buildDayRecord(record, type, label) {
 
   const photoHtml = record.photoBase64
     ? `<div class="day-photo-wrap"><img src="${record.photoBase64}" alt="${label}写真" onclick="openPhotoFull('${record.photoBase64}')"></div>`
-    : `<div class="day-photo-wrap"><div class="day-no-photo"><span class="icon">📷</span><span>写真なし</span></div></div>`;
+    : `<div class="day-photo-wrap"><div class="day-no-photo"><span class="icon">📷</span><span>なし</span></div></div>`;
 
-  return `<span class="day-record-label ${type}">${label}</span>
+  return `<div class="day-record-left">
+    <span class="day-record-label ${type}">${label}</span>
     <div class="record-time-row">
       <div class="day-record-time">${hm}</div>
       <div class="record-actions">
@@ -751,7 +765,8 @@ function buildDayRecord(record, type, label) {
         <button class="btn-cancel-time" onclick="hideEditForm('${record.id}')">キャンセル</button>
       </div>
     </div>
-    ${photoHtml}`;
+  </div>
+  ${photoHtml}`;
 }
 
 function showEditForm(recordId, currentHM) {
