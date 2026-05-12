@@ -567,9 +567,16 @@ window.addEventListener('load', async () => {
     console.error('モデル読み込みエラー:', e);
   }
 
-  // COCO-SSD（スマホ検知）をバックグラウンドで読み込み
+  // COCO-SSD（スマホ検知）を読み込み
   if (window.cocoSsd) {
-    cocoSsd.load().then(model => { phoneDetector = model; }).catch(e => console.warn('COCO-SSD error:', e));
+    setLoadingText('スマホ検知モデルを読み込み中...');
+    try {
+      phoneDetector = await cocoSsd.load();
+    } catch(e) {
+      console.warn('COCO-SSD error:', e);
+    }
+  } else {
+    console.warn('cocoSsd not found');
   }
 
   // ローディング終了
@@ -733,8 +740,11 @@ function startDetection() {
       // スマホ検知
       if (phoneDetector) {
         const predictions = await phoneDetector.detect(video);
-        const hasPhone = predictions.some(p => p.class === 'cell phone' && p.score > 0.4);
-        if (hasPhone) { handleFraud(); return; }
+        const phonePred = predictions.find(p => p.class === 'cell phone');
+        if (phonePred) {
+          setStatus(`📱 スマホ検知中... ${(phonePred.score * 100).toFixed(0)}%`, 'detecting');
+          if (phonePred.score > 0.25) { handleFraud(); return; }
+        }
       }
     } else {
       if (currentStaff) hideProfile();
