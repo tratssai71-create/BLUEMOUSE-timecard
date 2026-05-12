@@ -202,6 +202,7 @@
     .btn-clock:disabled { opacity: 0.25; cursor: not-allowed; transform: none !important; }
     .btn-clock:not(:disabled):hover { transform: translateY(-2px); }
     .btn-clock:not(:disabled):active { transform: translateY(0); }
+    .action-buttons { flex-wrap: wrap; }
     #btnIn {
       background: #16a34a;
       color: white; box-shadow: 0 2px 12px rgba(22,163,74,0.3);
@@ -209,6 +210,16 @@
     #btnOut {
       background: #dc2626;
       color: white; box-shadow: 0 2px 12px rgba(220,38,38,0.3);
+    }
+    #btnBreakIn {
+      background: #d97706;
+      color: white; box-shadow: 0 2px 12px rgba(217,119,6,0.3);
+      font-size: 16px;
+    }
+    #btnBreakOut {
+      background: #0284c7;
+      color: white; box-shadow: 0 2px 12px rgba(2,132,199,0.3);
+      font-size: 16px;
     }
 
     /* Thanks Screens */
@@ -415,12 +426,10 @@
     </div>
 
     <div class="action-buttons">
-      <button class="btn-clock" id="btnIn" disabled onclick="clockAction('in')">
-        出勤
-      </button>
-      <button class="btn-clock" id="btnOut" disabled onclick="clockAction('out')">
-        退勤
-      </button>
+      <button class="btn-clock" id="btnIn" disabled onclick="clockAction('in')">出勤</button>
+      <button class="btn-clock" id="btnOut" disabled onclick="clockAction('out')">退勤</button>
+      <button class="btn-clock" id="btnBreakIn" disabled onclick="clockAction('break_in')">休憩開始</button>
+      <button class="btn-clock" id="btnBreakOut" disabled onclick="clockAction('break_out')">休憩終了</button>
     </div>
   </div>
 
@@ -435,6 +444,32 @@
     <div class="thanks-message">今日も1日頑張りましょう！</div>
     <div class="thanks-time" id="thanksInTime"></div>
     <div class="thanks-bar"><div class="thanks-bar-fill" id="thanksInBar"></div></div>
+  </div>
+
+  <!-- サンクス画面（休憩開始） -->
+  <div id="thanksBreakInScreen" class="thanks-screen">
+    <div class="thanks-badge" style="background:#d97706;">☕ &nbsp;休憩開始</div>
+    <div class="thanks-photo-wrap in">
+      <div class="thanks-ring" style="border-color:#d97706;"></div>
+      <img class="thanks-staff-photo" id="thanksBreakInPhoto" src="" alt="">
+    </div>
+    <div class="thanks-name" id="thanksBreakInName"></div>
+    <div class="thanks-message">ゆっくり休憩してください！</div>
+    <div class="thanks-time" id="thanksBreakInTime"></div>
+    <div class="thanks-bar"><div class="thanks-bar-fill" id="thanksBreakInBar" style="background:#d97706;"></div></div>
+  </div>
+
+  <!-- サンクス画面（休憩終了） -->
+  <div id="thanksBreakOutScreen" class="thanks-screen">
+    <div class="thanks-badge" style="background:#0284c7;">✓ &nbsp;休憩終了</div>
+    <div class="thanks-photo-wrap in">
+      <div class="thanks-ring" style="border-color:#0284c7;"></div>
+      <img class="thanks-staff-photo" id="thanksBreakOutPhoto" src="" alt="">
+    </div>
+    <div class="thanks-name" id="thanksBreakOutName"></div>
+    <div class="thanks-message">お疲れ様です、また頑張りましょう！</div>
+    <div class="thanks-time" id="thanksBreakOutTime"></div>
+    <div class="thanks-bar"><div class="thanks-bar-fill" id="thanksBreakOutBar" style="background:#0284c7;"></div></div>
   </div>
 
   <!-- 不正行為検知画面 -->
@@ -750,11 +785,15 @@ function hideProfile() {
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
   document.getElementById('btnOut').disabled = true;
+  document.getElementById('btnBreakIn').disabled = true;
+  document.getElementById('btnBreakOut').disabled = true;
 }
 
 function enableButtons() {
   document.getElementById('btnIn').disabled = false;
   document.getElementById('btnOut').disabled = false;
+  document.getElementById('btnBreakIn').disabled = false;
+  document.getElementById('btnBreakOut').disabled = false;
   setStatus('✓ ' + currentStaff.name + 'さんを認証しました', 'recognized');
 }
 
@@ -768,6 +807,8 @@ async function clockAction(type) {
   // ボタン無効化（二重打刻防止）
   document.getElementById('btnIn').disabled = true;
   document.getElementById('btnOut').disabled = true;
+  document.getElementById('btnBreakIn').disabled = true;
+  document.getElementById('btnBreakOut').disabled = true;
 
   // 写真撮影
   const photo = capturePhoto();
@@ -812,29 +853,30 @@ function showThanks(type, staff, time) {
   const m = String(time.getMinutes()).padStart(2,'0');
   const timeStr = `${h}:${m}`;
 
-  if (type === 'in') {
-    document.getElementById('thanksInName').textContent = staff.name + ' さん';
-    document.getElementById('thanksInTime').textContent = `出勤時刻：${timeStr}`;
-    document.getElementById('thanksInPhoto').src = staff.photo || '';
-    document.getElementById('thanksInScreen').style.display = 'flex';
-    setTimeout(() => document.getElementById('thanksInBar').style.width = '100%', 100);
-  } else {
-    document.getElementById('thanksOutName').textContent = staff.name + ' さん';
-    document.getElementById('thanksOutTime').textContent = `退勤時刻：${timeStr}`;
-    document.getElementById('thanksOutPhoto').src = staff.photo || '';
-    document.getElementById('thanksOutScreen').style.display = 'flex';
-    setTimeout(() => document.getElementById('thanksOutBar').style.width = '100%', 100);
-  }
+  const configs = {
+    in:        { screen: 'thanksInScreen',       name: 'thanksInName',       time: 'thanksInTime',       photo: 'thanksInPhoto',       bar: 'thanksInBar',       label: '出勤時刻' },
+    out:       { screen: 'thanksOutScreen',      name: 'thanksOutName',      time: 'thanksOutTime',      photo: 'thanksOutPhoto',      bar: 'thanksOutBar',      label: '退勤時刻' },
+    break_in:  { screen: 'thanksBreakInScreen',  name: 'thanksBreakInName',  time: 'thanksBreakInTime',  photo: 'thanksBreakInPhoto',  bar: 'thanksBreakInBar',  label: '休憩開始' },
+    break_out: { screen: 'thanksBreakOutScreen', name: 'thanksBreakOutName', time: 'thanksBreakOutTime', photo: 'thanksBreakOutPhoto', bar: 'thanksBreakOutBar', label: '休憩終了' },
+  };
+  const c = configs[type];
+  document.getElementById(c.name).textContent = staff.name + ' さん';
+  document.getElementById(c.time).textContent = `${c.label}：${timeStr}`;
+  document.getElementById(c.photo).src = staff.photo || '';
+  document.getElementById(c.screen).style.display = 'flex';
+  setTimeout(() => document.getElementById(c.bar).style.width = '100%', 100);
 
   // 5秒後に打刻画面へ戻る
   setTimeout(() => returnToClock(), 5000);
 }
 
 async function returnToClock() {
-  document.getElementById('thanksInScreen').style.display = 'none';
-  document.getElementById('thanksOutScreen').style.display = 'none';
-  document.getElementById('thanksInBar').style.width = '0%';
-  document.getElementById('thanksOutBar').style.width = '0%';
+  ['thanksInScreen','thanksOutScreen','thanksBreakInScreen','thanksBreakOutScreen'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  ['thanksInBar','thanksOutBar','thanksBreakInBar','thanksBreakOutBar'].forEach(id => {
+    document.getElementById(id).style.width = '0%';
+  });
   document.getElementById('clockScreen').style.display = 'flex';
   hideProfile();
   setStatus('スタッフの顔をカメラに向けてください', 'detecting');
