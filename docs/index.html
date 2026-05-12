@@ -6,7 +6,9 @@
   <title>タイムカード | BLUE MOUSE</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
@@ -484,6 +486,7 @@ let detectionActive = false;
 let labeledDescriptors = [];
 let detectionTimer = null;
 let videoStream = null;
+let phoneDetector = null;
 
 // ============================
 // 初期化
@@ -509,6 +512,11 @@ window.addEventListener('load', async () => {
     ]);
   } catch(e) {
     console.error('モデル読み込みエラー:', e);
+  }
+
+  // COCO-SSD（スマホ検知）をバックグラウンドで読み込み
+  if (window.cocoSsd) {
+    cocoSsd.load().then(model => { phoneDetector = model; }).catch(e => console.warn('COCO-SSD error:', e));
   }
 
   // ローディング終了
@@ -640,13 +648,6 @@ function startDetection() {
 
     const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
 
-    // 複数顔検知（スマホ画面に顔写真を映して不正しようとすると2つ以上検出される）
-    const allFaces = await faceapi.detectAllFaces(video, options);
-    if (allFaces.length > 1 && currentStaff) {
-      handleFraud();
-      return;
-    }
-
     const detection = await faceapi
       .detectSingleFace(video, options)
       .withFaceLandmarks()
@@ -675,6 +676,12 @@ function startDetection() {
     if (bestDistance < THRESHOLD) {
       if (!currentStaff || currentStaff.id !== bestMatch.id) {
         showProfile(bestMatch);
+      }
+      // スマホ検知
+      if (phoneDetector) {
+        const predictions = await phoneDetector.detect(video);
+        const hasPhone = predictions.some(p => p.class === 'cell phone' && p.score > 0.4);
+        if (hasPhone) { handleFraud(); return; }
       }
     } else {
       if (currentStaff) hideProfile();
