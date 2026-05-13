@@ -491,9 +491,7 @@ let baseL = [], baseR = [], baseMar = [];
 let baseLeftEAR = null, baseRightEAR = null, baseMAR = null;
 let livenessCompleted = false;
 const LIVENESS_CHALLENGES = [
-  { id: 'mouth',     label: '😮 口を大きく開けて！' },
-  { id: 'turnLeft',  label: '👈 左を向いて！' },
-  { id: 'turnRight', label: '👉 右を向いて！' },
+  { id: 'mouth', label: '😮 口を大きく開けて！' },
 ];
 
 // ============================
@@ -830,21 +828,9 @@ function checkChallenge(positions) {
     return;
   }
 
-  // ② チャレンジ判定
-  // 顔の向き：鼻先(30)が左目(36)～右目(45)の間のどの位置にいるかで判定
-  // 正面≈0.5、左向き(本人の左)≈0.35以下、右向き≈0.65以上
-  const lCorner = positions[36], rCorner = positions[45], nose = positions[30];
-  const eyeSpan = rCorner.x - lCorner.x;
-  const noseRatio = eyeSpan > 0 ? (nose.x - lCorner.x) / eyeSpan : 0.5;
-  const baseRatio = 0.5;
-
-  let ok = false;
-  if (currentChallenge.id === 'mouth')     ok = mar > Math.max(baseMAR * 2.2, baseMAR + 0.20);
-  if (currentChallenge.id === 'turnLeft')  ok = noseRatio < 0.38;
-  if (currentChallenge.id === 'turnRight') ok = noseRatio > 0.62;
-
-  console.log('[Challenge]', currentChallenge.id,
-    '/ MAR:', mar.toFixed(3), '/ noseRatio:', noseRatio.toFixed(3), '/ ok:', ok);
+  // ② チャレンジ判定（口を開けているか）
+  const ok = mar > Math.max(baseMAR * 2.2, baseMAR + 0.20);
+  console.log('[Challenge] MAR:', mar.toFixed(3), '/ base:', baseMAR.toFixed(3), '/ ok:', ok);
 
   if (ok) {
     livenessCompleted = true;
