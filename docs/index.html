@@ -487,6 +487,8 @@ let phoneDetector = null;
 let livenessTimer = null;
 let eyesClosed = false;
 let blinkDetected = false;
+// 顔消失グレース（まばたき中の一瞬消失でリセットされないように）
+let lastFaceTime = 0;
 
 // ============================
 // 初期化
@@ -661,10 +663,14 @@ function startDetection() {
       .withFaceDescriptor();
 
     if (!detection) {
-      if (currentStaff) hideProfile();
-      setStatus('スタッフの顔をカメラに向けてください', 'detecting');
+      // まばたき中の一瞬消失（1.5秒以内）はリセットしない
+      if (currentStaff && Date.now() - lastFaceTime > 1500) {
+        hideProfile();
+      }
+      if (!currentStaff) setStatus('スタッフの顔をカメラに向けてください', 'detecting');
       return;
     }
+    lastFaceTime = Date.now();
 
     if (labeledDescriptors.length === 0) {
       setStatus('スタッフが未登録です（管理者ページから登録してください）', '');
@@ -778,11 +784,12 @@ function startLivenessCheck() {
   eyesClosed = false;
   blinkDetected = false;
   const TIMEOUT_MS = 8000;
-  const BASELINE_SAMPLES = 6; // 最初の6サンプルでベースラインEARを計測
+  const BASELINE_SAMPLES = 4; // 最初の4サンプル（約0.8秒）でベースライン計測
   const startTime = Date.now();
   let baseEAR = null;
-  let baseSum = 0;
-  let baseCount = 0;
+  let baseValues = [];
+  let minEAR = Infinity;
+  let isProcessing = false;
 
   setStatus('👁 まばたきしてください（残り 8 秒）', 'detecting');
 
@@ -791,61 +798,63 @@ function startLivenessCheck() {
 
   livenessTimer = setInterval(async () => {
     if (!currentStaff) { cancelLiveness(); return; }
+    if (isProcessing) return; // 前の処理と重複しないように
+    isProcessing = true;
 
-    const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, Math.ceil((TIMEOUT_MS - elapsed) / 1000));
+    try {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, Math.ceil((TIMEOUT_MS - elapsed) / 1000));
 
-    if (elapsed >= TIMEOUT_MS) {
-      clearInterval(livenessTimer);
-      livenessTimer = null;
-      if (!blinkDetected) handleFraud();
-      return;
-    }
-
-    const det = await faceapi
-      .detectSingleFace(video, options)
-      .withFaceLandmarks();
-
-    if (!det) {
-      setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
-      return;
-    }
-
-    const ear = calcEAR(det.landmarks.positions);
-    if (!ear || isNaN(ear) || ear <= 0) return;
-
-    // フェーズ①：ベースラインEAR計測（最初の約1秒）
-    if (baseCount < BASELINE_SAMPLES) {
-      baseSum += ear;
-      baseCount++;
-      if (baseCount === BASELINE_SAMPLES) {
-        baseEAR = baseSum / BASELINE_SAMPLES;
-        console.log('[Liveness] baseEAR:', baseEAR.toFixed(3));
+      if (elapsed >= TIMEOUT_MS) {
+        clearInterval(livenessTimer);
+        livenessTimer = null;
+        if (!blinkDetected) handleFraud();
+        return;
       }
+
+      const det = await faceapi
+        .detectSingleFace(video, options)
+        .withFaceLandmarks();
+
+      if (!det) {
+        setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
+        return;
+      }
+
+      const ear = calcEAR(det.landmarks.positions);
+      if (!ear || isNaN(ear) || ear <= 0) return;
+
+      // フェーズ①：ベースライン計測（まばたき中の低い値は除外）
+      if (baseValues.length < BASELINE_SAMPLES) {
+        if (ear > 0.12) baseValues.push(ear); // まばたき中の値は除外
+        if (baseValues.length === BASELINE_SAMPLES) {
+          baseEAR = baseValues.reduce((a, b) => a + b, 0) / BASELINE_SAMPLES;
+          console.log('[Liveness] baseEAR:', baseEAR.toFixed(3));
+        }
+        setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
+        return;
+      }
+
+      // フェーズ②：まばたき検知
+      // ベースラインから20%以上EARが下がったら「まばたきあり」と判定
+      minEAR = Math.min(minEAR, ear);
+      const blinkThr = baseEAR * 0.80;
+      console.log('[Liveness] EAR:', ear.toFixed(3), '/ min:', minEAR.toFixed(3),
+                  '/ base:', baseEAR.toFixed(3), '/ thr:', blinkThr.toFixed(3));
+
+      if (minEAR < blinkThr) {
+        // まばたき確認！
+        blinkDetected = true;
+        clearInterval(livenessTimer);
+        livenessTimer = null;
+        enableButtons();
+        return;
+      }
+
       setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
-      return;
+    } finally {
+      isProcessing = false;
     }
-
-    // フェーズ②：まばたき検知（ベースラインから相対判定）
-    const closedThr = baseEAR * 0.72; // ベースの72%以下 → 目を閉じた
-    const openThr   = baseEAR * 0.88; // ベースの88%以上 → 目が開いた
-
-    console.log('[Liveness] EAR:', ear.toFixed(3), '/ base:', baseEAR.toFixed(3),
-                '/ closed?', ear < closedThr, '/ eyesClosed:', eyesClosed);
-
-    if (ear < closedThr) {
-      eyesClosed = true;
-    } else if (eyesClosed && ear >= openThr) {
-      // まばたき完了
-      blinkDetected = true;
-      eyesClosed = false;
-      clearInterval(livenessTimer);
-      livenessTimer = null;
-      enableButtons();
-      return;
-    }
-
-    setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
   }, 200);
 }
 
