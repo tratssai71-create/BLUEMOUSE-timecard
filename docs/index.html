@@ -491,9 +491,9 @@ let baseL = [], baseR = [], baseMar = [];
 let baseLeftEAR = null, baseRightEAR = null, baseMAR = null;
 let livenessCompleted = false;
 const LIVENESS_CHALLENGES = [
-  { id: 'leftEye',  label: '👈 左目だけ閉じて！' },
-  { id: 'rightEye', label: '👉 右目だけ閉じて！' },
-  { id: 'mouth',    label: '😮 口を大きく開けて！' },
+  { id: 'mouth',     label: '😮 口を大きく開けて！' },
+  { id: 'turnLeft',  label: '👈 左を向いて！' },
+  { id: 'turnRight', label: '👉 右を向いて！' },
 ];
 
 // ============================
@@ -817,34 +817,34 @@ function checkChallenge(positions) {
     return;
   }
 
-  const lEAR = eyeEAR([36,37,38,39,40,41].map(i => positions[i]));
-  const rEAR = eyeEAR([42,43,44,45,46,47].map(i => positions[i]));
-  const mar  = mouthAR(positions);
+  const mar = mouthAR(positions);
 
-  // ① ベースライン計測（最初の3サンプル）
-  if (!baseLeftEAR) {
-    if (lEAR > 0.10) baseL.push(lEAR);
-    if (rEAR > 0.10) baseR.push(rEAR);
-    if (mar  < 0.50) baseMar.push(mar);
-    if (baseL.length >= 3 && baseR.length >= 3 && baseMar.length >= 3) {
-      baseLeftEAR  = baseL.reduce((a,b)=>a+b,0)  / baseL.length;
-      baseRightEAR = baseR.reduce((a,b)=>a+b,0)  / baseR.length;
-      baseMAR      = baseMar.reduce((a,b)=>a+b,0) / baseMar.length;
-      console.log('[Challenge] base L:', baseLeftEAR.toFixed(3), 'R:', baseRightEAR.toFixed(3), 'MAR:', baseMAR.toFixed(3));
+  // ① ベースライン計測：口のMAR基準値を3サンプル取る
+  if (!baseMAR) {
+    if (mar < 0.50) baseMar.push(mar);
+    if (baseMar.length >= 3) {
+      baseMAR = baseMar.reduce((a,b)=>a+b,0) / baseMar.length;
+      console.log('[Challenge] baseMAR:', baseMAR.toFixed(3));
     }
     setStatus(`🎯 ${currentChallenge.label}（残り ${remaining} 秒）`, 'detecting');
     return;
   }
 
   // ② チャレンジ判定
+  // 顔の向き：鼻先(30)が左目(36)～右目(45)の間のどの位置にいるかで判定
+  // 正面≈0.5、左向き(本人の左)≈0.35以下、右向き≈0.65以上
+  const lCorner = positions[36], rCorner = positions[45], nose = positions[30];
+  const eyeSpan = rCorner.x - lCorner.x;
+  const noseRatio = eyeSpan > 0 ? (nose.x - lCorner.x) / eyeSpan : 0.5;
+  const baseRatio = 0.5;
+
   let ok = false;
-  if (currentChallenge.id === 'leftEye')  ok = lEAR < baseLeftEAR  * 0.72;
-  if (currentChallenge.id === 'rightEye') ok = rEAR < baseRightEAR * 0.72;
-  if (currentChallenge.id === 'mouth')    ok = mar  > Math.max(baseMAR * 2.2, baseMAR + 0.20);
+  if (currentChallenge.id === 'mouth')     ok = mar > Math.max(baseMAR * 2.2, baseMAR + 0.20);
+  if (currentChallenge.id === 'turnLeft')  ok = noseRatio < 0.38;
+  if (currentChallenge.id === 'turnRight') ok = noseRatio > 0.62;
 
   console.log('[Challenge]', currentChallenge.id,
-    '/ L:', lEAR.toFixed(3), 'R:', rEAR.toFixed(3), 'MAR:', mar.toFixed(3),
-    '/ ok:', ok);
+    '/ MAR:', mar.toFixed(3), '/ noseRatio:', noseRatio.toFixed(3), '/ ok:', ok);
 
   if (ok) {
     livenessCompleted = true;
