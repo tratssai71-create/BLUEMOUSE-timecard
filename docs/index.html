@@ -483,6 +483,9 @@ let labeledDescriptors = [];
 let detectionTimer = null;
 let videoStream = null;
 let phoneDetector = null;
+// 微動検知
+let livenessFrames = [];
+let livenessTimer = null;
 
 // ============================
 // 初期化
@@ -748,10 +751,13 @@ function showProfile(staff) {
   document.getElementById('staffPositionEl').textContent = staff.position;
   document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
   document.getElementById('profileCard').style.display = 'flex';
-  enableButtons();
+  document.getElementById('btnIn').disabled = true;
+  document.getElementById('btnOut').disabled = true;
+  startLivenessCheck();
 }
 
 function hideProfile() {
+  cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
@@ -762,6 +768,63 @@ function enableButtons() {
   document.getElementById('btnIn').disabled = false;
   document.getElementById('btnOut').disabled = false;
   setStatus('✓ ' + currentStaff.name + 'さんを認証しました', 'recognized');
+}
+
+// ============================
+// 微動検知（なりすまし防止）
+// ============================
+function startLivenessCheck() {
+  livenessFrames = [];
+  setStatus('🔍 本人確認中... そのままでいてください', 'detecting');
+
+  const video = document.getElementById('video');
+  const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 });
+
+  livenessTimer = setInterval(async () => {
+    if (!currentStaff) { cancelLiveness(); return; }
+    const det = await faceapi.detectSingleFace(video, options);
+    if (!det) return;
+    livenessFrames.push({
+      x: det.box.x + det.box.width / 2,
+      y: det.box.y + det.box.height / 2
+    });
+    if (livenessFrames.length >= 10) {
+      clearInterval(livenessTimer);
+      livenessTimer = null;
+      evaluateLiveness();
+    }
+  }, 200);
+
+  // 5秒タイムアウト（サンプルが足りなくても判定）
+  setTimeout(() => {
+    if (livenessTimer) {
+      clearInterval(livenessTimer);
+      livenessTimer = null;
+      if (livenessFrames.length >= 5) evaluateLiveness();
+    }
+  }, 5000);
+}
+
+function cancelLiveness() {
+  if (livenessTimer) { clearInterval(livenessTimer); livenessTimer = null; }
+  livenessFrames = [];
+}
+
+function evaluateLiveness() {
+  if (!currentStaff) return;
+  const xs = livenessFrames.map(f => f.x);
+  const ys = livenessFrames.map(f => f.y);
+  const movement = Math.max(calcStdDev(xs), calcStdDev(ys));
+  if (movement < 2.5) {
+    handleFraud(); // 静止画と判定
+  } else {
+    enableButtons();
+  }
+}
+
+function calcStdDev(values) {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  return Math.sqrt(values.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / values.length);
 }
 
 // ============================
