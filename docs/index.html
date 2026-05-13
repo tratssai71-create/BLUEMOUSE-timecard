@@ -484,6 +484,7 @@ let detectionTimer = null;
 let videoStream = null;
 let phoneDetector = null;
 let lastFaceTime = 0;
+let livenessTimer = null;
 
 // ============================
 // 初期化
@@ -753,10 +754,13 @@ function showProfile(staff) {
   document.getElementById('staffPositionEl').textContent = staff.position;
   document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
   document.getElementById('profileCard').style.display = 'flex';
-  enableButtons();
+  document.getElementById('btnIn').disabled = true;
+  document.getElementById('btnOut').disabled = true;
+  startLivenessCheck();
 }
 
 function hideProfile() {
+  cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
@@ -769,6 +773,109 @@ function enableButtons() {
   setStatus('✓ ' + currentStaff.name + 'さんを認証しました', 'recognized');
 }
 
+
+// ============================
+// チャレンジ式ライブネス検知
+// ============================
+const LIVENESS_CHALLENGES = [
+  { id: 'leftEye',  label: '👈 左目だけ閉じて！' },
+  { id: 'rightEye', label: '👉 右目だけ閉じて！' },
+  { id: 'mouth',    label: '😮 口を大きく開けて！' },
+];
+
+function startLivenessCheck() {
+  const challenge = LIVENESS_CHALLENGES[Math.floor(Math.random() * LIVENESS_CHALLENGES.length)];
+  const TIMEOUT_MS = 8000;
+  const BASELINE_SAMPLES = 5;
+  const startTime = Date.now();
+  let baseL = [], baseR = [], baseMar = [];
+  let baseLeftEAR = null, baseRightEAR = null, baseMAR = null;
+  let isProcessing = false;
+
+  setStatus(`🎯 ${challenge.label}（8秒以内に）`, 'detecting');
+
+  const video = document.getElementById('video');
+  const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+
+  livenessTimer = setInterval(async () => {
+    if (!currentStaff) { cancelLiveness(); return; }
+    if (isProcessing) return;
+    isProcessing = true;
+
+    try {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, Math.ceil((TIMEOUT_MS - elapsed) / 1000));
+
+      if (elapsed >= TIMEOUT_MS) {
+        clearInterval(livenessTimer); livenessTimer = null;
+        handleFraud(); return;
+      }
+
+      const det = await faceapi.detectSingleFace(video, options).withFaceLandmarks();
+      if (!det) {
+        setStatus(`🎯 ${challenge.label}（残り ${remaining} 秒）`, 'detecting');
+        return;
+      }
+
+      const pos = det.landmarks.positions;
+      const lEAR = eyeEAR([36,37,38,39,40,41].map(i => pos[i]));
+      const rEAR = eyeEAR([42,43,44,45,46,47].map(i => pos[i]));
+      const mar  = mouthAR(pos);
+
+      // ① ベースライン計測（最初の約1秒）
+      if (!baseLeftEAR) {
+        if (lEAR > 0.12) baseL.push(lEAR);
+        if (rEAR > 0.12) baseR.push(rEAR);
+        if (mar < 0.45)  baseMar.push(mar);
+        if (baseL.length >= BASELINE_SAMPLES && baseR.length >= BASELINE_SAMPLES && baseMar.length >= BASELINE_SAMPLES) {
+          baseLeftEAR  = baseL.reduce((a,b)=>a+b,0)  / baseL.length;
+          baseRightEAR = baseR.reduce((a,b)=>a+b,0)  / baseR.length;
+          baseMAR      = baseMar.reduce((a,b)=>a+b,0) / baseMar.length;
+          console.log('[Challenge] base L:', baseLeftEAR.toFixed(3), 'R:', baseRightEAR.toFixed(3), 'MAR:', baseMAR.toFixed(3));
+        }
+        setStatus(`🎯 ${challenge.label}（残り ${remaining} 秒）`, 'detecting');
+        return;
+      }
+
+      // ② チャレンジ判定
+      let ok = false;
+      if (challenge.id === 'leftEye')  ok = lEAR < baseLeftEAR  * 0.72;
+      if (challenge.id === 'rightEye') ok = rEAR < baseRightEAR * 0.72;
+      if (challenge.id === 'mouth')    ok = mar  > Math.max(baseMAR * 2.2, baseMAR + 0.18);
+
+      console.log('[Challenge]', challenge.id, '/ L:', lEAR.toFixed(3), 'R:', rEAR.toFixed(3), 'MAR:', mar.toFixed(3), '/ ok:', ok);
+
+      if (ok) {
+        clearInterval(livenessTimer); livenessTimer = null;
+        enableButtons(); return;
+      }
+
+      setStatus(`🎯 ${challenge.label}（残り ${remaining} 秒）`, 'detecting');
+    } finally {
+      isProcessing = false;
+    }
+  }, 200);
+}
+
+function cancelLiveness() {
+  if (livenessTimer) { clearInterval(livenessTimer); livenessTimer = null; }
+}
+
+function eyeEAR(pts) {
+  const A = pd(pts[1], pts[5]);
+  const B = pd(pts[2], pts[4]);
+  const C = pd(pts[0], pts[3]);
+  return (A + B) / (2.0 * C);
+}
+
+function mouthAR(pos) {
+  // 上唇中央51・下唇中央57・口角48・54
+  return pd(pos[51], pos[57]) / (pd(pos[48], pos[54]) + 0.001);
+}
+
+function pd(a, b) {
+  return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
+}
 
 // ============================
 // 打刻処理
