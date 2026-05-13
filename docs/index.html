@@ -483,9 +483,10 @@ let labeledDescriptors = [];
 let detectionTimer = null;
 let videoStream = null;
 let phoneDetector = null;
-// 微動検知
-let livenessFrames = [];
+// まばたき検知
 let livenessTimer = null;
+let eyesClosed = false;
+let blinkDetected = false;
 
 // ============================
 // 初期化
@@ -771,60 +772,79 @@ function enableButtons() {
 }
 
 // ============================
-// 微動検知（なりすまし防止）
+// まばたき検知（なりすまし防止）
 // ============================
 function startLivenessCheck() {
-  livenessFrames = [];
-  setStatus('🔍 本人確認中... そのままでいてください', 'detecting');
+  eyesClosed = false;
+  blinkDetected = false;
+  const TIMEOUT_MS = 6000;
+  const startTime = Date.now();
+
+  setStatus('👁 まばたきしてください（残り 6 秒）', 'detecting');
 
   const video = document.getElementById('video');
   const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 });
 
   livenessTimer = setInterval(async () => {
     if (!currentStaff) { cancelLiveness(); return; }
-    const det = await faceapi.detectSingleFace(video, options);
-    if (!det) return;
-    livenessFrames.push({
-      x: det.box.x + det.box.width / 2,
-      y: det.box.y + det.box.height / 2
-    });
-    if (livenessFrames.length >= 10) {
-      clearInterval(livenessTimer);
-      livenessTimer = null;
-      evaluateLiveness();
-    }
-  }, 200);
 
-  // 5秒タイムアウト（サンプルが足りなくても判定）
-  setTimeout(() => {
-    if (livenessTimer) {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, Math.ceil((TIMEOUT_MS - elapsed) / 1000));
+
+    if (elapsed >= TIMEOUT_MS) {
       clearInterval(livenessTimer);
       livenessTimer = null;
-      if (livenessFrames.length >= 5) evaluateLiveness();
+      if (!blinkDetected) handleFraud();
+      return;
     }
-  }, 5000);
+
+    const det = await faceapi
+      .detectSingleFace(video, options)
+      .withFaceLandmarks();
+
+    if (!det) {
+      setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
+      return;
+    }
+
+    const ear = calcEAR(det.landmarks.positions);
+
+    if (ear < 0.20) {
+      // 目が閉じている
+      eyesClosed = true;
+    } else if (eyesClosed && ear > 0.25) {
+      // 目が再び開いた → まばたき完了
+      blinkDetected = true;
+      eyesClosed = false;
+      clearInterval(livenessTimer);
+      livenessTimer = null;
+      enableButtons();
+      return;
+    }
+
+    setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
+  }, 200);
 }
 
 function cancelLiveness() {
   if (livenessTimer) { clearInterval(livenessTimer); livenessTimer = null; }
-  livenessFrames = [];
+  eyesClosed = false;
+  blinkDetected = false;
 }
 
-function evaluateLiveness() {
-  if (!currentStaff) return;
-  const xs = livenessFrames.map(f => f.x);
-  const ys = livenessFrames.map(f => f.y);
-  const movement = Math.max(calcStdDev(xs), calcStdDev(ys));
-  if (movement < 2.5) {
-    handleFraud(); // 静止画と判定
-  } else {
-    enableButtons();
+function calcEAR(positions) {
+  function eyeEAR(pts) {
+    const A = ptDist(pts[1], pts[5]);
+    const B = ptDist(pts[2], pts[4]);
+    const C = ptDist(pts[0], pts[3]);
+    return (A + B) / (2.0 * C);
   }
-}
-
-function calcStdDev(values) {
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  return Math.sqrt(values.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / values.length);
+  function ptDist(a, b) {
+    return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+  }
+  const leftEye  = [36,37,38,39,40,41].map(i => positions[i]);
+  const rightEye = [42,43,44,45,46,47].map(i => positions[i]);
+  return (eyeEAR(leftEye) + eyeEAR(rightEye)) / 2;
 }
 
 // ============================
