@@ -200,8 +200,6 @@
     }
     .cal-time.in { background: #dcfce7; color: #15803d; }
     .cal-time.out { background: #fee2e2; color: #dc2626; }
-    .cal-time.break_in { background: #fef3c7; color: #b45309; }
-    .cal-time.break_out { background: #dbeafe; color: #1d4ed8; }
     .cal-duration {
       font-size: 9px; color: #94a3b8; margin-top: 4px;
     }
@@ -245,8 +243,6 @@
     }
     .day-record-label.in { background: #dcfce7; color: #15803d; }
     .day-record-label.out { background: #fee2e2; color: #dc2626; }
-    .day-record-label.break_in { background: #fef3c7; color: #b45309; }
-    .day-record-label.break_out { background: #dbeafe; color: #1d4ed8; }
     .day-record-time { font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
     .day-photo-wrap {
       width: 90px; height: 90px; border-radius: 10px; flex-shrink: 0;
@@ -410,8 +406,6 @@
     </div>
     <div class="day-body">
       <div class="day-record" id="dayModalIn"></div>
-      <div class="day-record" id="dayModalBreakIn"></div>
-      <div class="day-record" id="dayModalBreakOut"></div>
       <div class="day-record" id="dayModalOut"></div>
     </div>
   </div>
@@ -607,12 +601,10 @@ function renderCalendar() {
     const jst = new Date(ts.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jst.getFullYear() !== year || jst.getMonth() !== month) return;
     const key = jst.getDate();
-    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [], breakInTimes: [], breakOutTimes: [], hasPhoto: false };
+    if (!byDate[key]) byDate[key] = { inTimes: [], outTimes: [], hasPhoto: false };
     const hm = `${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')}`;
     if (r.type === 'in') byDate[key].inTimes.push(hm);
     else if (r.type === 'out') byDate[key].outTimes.push(hm);
-    else if (r.type === 'break_in') byDate[key].breakInTimes.push(hm);
-    else if (r.type === 'break_out') byDate[key].breakOutTimes.push(hm);
     if (r.photoBase64) byDate[key].hasPhoto = true;
   });
 
@@ -643,10 +635,8 @@ function renderCalendar() {
     html += `<div class="${cls}" ${clickAttr}><div class="cal-day">${d}</div>`;
 
     if (rec) {
-      if (rec.inTimes.length > 0)       html += `<div class="cal-time in">▲ ${rec.inTimes.sort()[0]}</div>`;
-      if (rec.breakInTimes.length > 0)  html += `<div class="cal-time break_in">☕ ${rec.breakInTimes.sort()[0]}</div>`;
-      if (rec.breakOutTimes.length > 0) html += `<div class="cal-time break_out">↩ ${rec.breakOutTimes.sort()[0]}</div>`;
-      if (rec.outTimes.length > 0)      html += `<div class="cal-time out">▼ ${rec.outTimes.slice().sort().pop()}</div>`;
+      if (rec.inTimes.length > 0)  html += `<div class="cal-time in">▲ ${rec.inTimes.sort()[0]}</div>`;
+      if (rec.outTimes.length > 0) html += `<div class="cal-time out">▼ ${rec.outTimes.slice().sort().pop()}</div>`;
       if (rec.inTimes.length > 0 && rec.outTimes.length > 0) {
         const inMin = timeToMin(rec.inTimes.sort()[0]);
         const outMin = timeToMin(rec.outTimes.slice().sort().pop());
@@ -720,15 +710,11 @@ function openDayDetail(day) {
     return ta - tb;
   });
 
-  const inRecord       = dayRecords.find(r => r.type === 'in');
-  const outRecord      = dayRecords.find(r => r.type === 'out');
-  const breakInRecord  = dayRecords.find(r => r.type === 'break_in');
-  const breakOutRecord = dayRecords.find(r => r.type === 'break_out');
+  const inRecord  = dayRecords.find(r => r.type === 'in');
+  const outRecord = dayRecords.find(r => r.type === 'out');
 
-  document.getElementById('dayModalIn').innerHTML       = buildDayRecord(inRecord,       'in',       '出勤');
-  document.getElementById('dayModalBreakIn').innerHTML  = buildDayRecord(breakInRecord,  'break_in',  '休憩開始');
-  document.getElementById('dayModalBreakOut').innerHTML = buildDayRecord(breakOutRecord, 'break_out', '休憩終了');
-  document.getElementById('dayModalOut').innerHTML      = buildDayRecord(outRecord,      'out',      '退勤');
+  document.getElementById('dayModalIn').innerHTML  = buildDayRecord(inRecord,  'in',  '出勤');
+  document.getElementById('dayModalOut').innerHTML = buildDayRecord(outRecord, 'out', '退勤');
 
   document.getElementById('dayModal').classList.add('show');
 }
