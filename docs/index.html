@@ -483,11 +483,6 @@ let labeledDescriptors = [];
 let detectionTimer = null;
 let videoStream = null;
 let phoneDetector = null;
-// まばたき検知
-let livenessTimer = null;
-let eyesClosed = false;
-let blinkDetected = false;
-// 顔消失グレース（まばたき中の一瞬消失でリセットされないように）
 let lastFaceTime = 0;
 
 // ============================
@@ -758,13 +753,10 @@ function showProfile(staff) {
   document.getElementById('staffPositionEl').textContent = staff.position;
   document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
   document.getElementById('profileCard').style.display = 'flex';
-  document.getElementById('btnIn').disabled = true;
-  document.getElementById('btnOut').disabled = true;
-  startLivenessCheck();
+  enableButtons();
 }
 
 function hideProfile() {
-  cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
@@ -777,107 +769,6 @@ function enableButtons() {
   setStatus('✓ ' + currentStaff.name + 'さんを認証しました', 'recognized');
 }
 
-// ============================
-// まばたき検知（なりすまし防止）
-// ============================
-function startLivenessCheck() {
-  eyesClosed = false;
-  blinkDetected = false;
-  const TIMEOUT_MS = 8000;
-  const BASELINE_SAMPLES = 4; // 最初の4サンプル（約0.8秒）でベースライン計測
-  const startTime = Date.now();
-  let baseEAR = null;
-  let baseValues = [];
-  let minEAR = Infinity;
-  let isProcessing = false;
-
-  setStatus('👁 まばたきしてください（残り 8 秒）', 'detecting');
-
-  const video = document.getElementById('video');
-  const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
-
-  livenessTimer = setInterval(async () => {
-    if (!currentStaff) { cancelLiveness(); return; }
-    if (isProcessing) return; // 前の処理と重複しないように
-    isProcessing = true;
-
-    try {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, Math.ceil((TIMEOUT_MS - elapsed) / 1000));
-
-      if (elapsed >= TIMEOUT_MS) {
-        clearInterval(livenessTimer);
-        livenessTimer = null;
-        if (!blinkDetected) handleFraud();
-        return;
-      }
-
-      const det = await faceapi
-        .detectSingleFace(video, options)
-        .withFaceLandmarks();
-
-      if (!det) {
-        setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
-        return;
-      }
-
-      const ear = calcEAR(det.landmarks.positions);
-      if (!ear || isNaN(ear) || ear <= 0) return;
-
-      // フェーズ①：ベースライン計測（まばたき中の低い値は除外）
-      if (baseValues.length < BASELINE_SAMPLES) {
-        if (ear > 0.12) baseValues.push(ear); // まばたき中の値は除外
-        if (baseValues.length === BASELINE_SAMPLES) {
-          baseEAR = baseValues.reduce((a, b) => a + b, 0) / BASELINE_SAMPLES;
-          console.log('[Liveness] baseEAR:', baseEAR.toFixed(3));
-        }
-        setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
-        return;
-      }
-
-      // フェーズ②：まばたき検知
-      // ベースラインから20%以上EARが下がったら「まばたきあり」と判定
-      minEAR = Math.min(minEAR, ear);
-      const blinkThr = baseEAR * 0.80;
-      console.log('[Liveness] EAR:', ear.toFixed(3), '/ min:', minEAR.toFixed(3),
-                  '/ base:', baseEAR.toFixed(3), '/ thr:', blinkThr.toFixed(3));
-
-      if (minEAR < blinkThr) {
-        // まばたき確認！
-        blinkDetected = true;
-        clearInterval(livenessTimer);
-        livenessTimer = null;
-        enableButtons();
-        return;
-      }
-
-      setStatus(`👁 まばたきしてください（残り ${remaining} 秒）`, 'detecting');
-    } finally {
-      isProcessing = false;
-    }
-  }, 200);
-}
-
-function cancelLiveness() {
-  if (livenessTimer) { clearInterval(livenessTimer); livenessTimer = null; }
-  eyesClosed = false;
-  blinkDetected = false;
-}
-
-function calcEAR(positions) {
-  function eyeEAR(pts) {
-    const A = ptDist(pts[1], pts[5]);
-    const B = ptDist(pts[2], pts[4]);
-    const C = ptDist(pts[0], pts[3]);
-    return (A + B) / (2.0 * C);
-  }
-  function ptDist(a, b) {
-    return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-  }
-  const leftEye  = [36,37,38,39,40,41].map(i => positions[i]);
-  const rightEye = [42,43,44,45,46,47].map(i => positions[i]);
-  return (eyeEAR(leftEye) + eyeEAR(rightEye)) / 2;
-}
 
 // ============================
 // 打刻処理
