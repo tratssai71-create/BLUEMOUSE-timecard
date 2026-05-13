@@ -6,7 +6,6 @@
   <title>管理者ページ | BLUE MOUSE タイムカード</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
@@ -82,82 +81,6 @@
     .btn-delete-staff:hover { color: #ef4444; }
     .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
-
-    /* ===== FRAUD LOGS ===== */
-    /* ===== SHIFT SECTION ===== */
-    .shift-section { margin-top: 48px; }
-    .shift-section-title {
-      font-size: 13px; font-weight: 700; color: #7c3aed;
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .shift-upload-box {
-      border: 2px dashed #c4b5fd; border-radius: 16px;
-      background: #faf5ff; padding: 32px; text-align: center;
-      cursor: pointer; transition: all 0.2s; margin-bottom: 16px;
-    }
-    .shift-upload-box:hover { border-color: #7c3aed; background: #f3e8ff; }
-    .shift-upload-box.dragover { border-color: #7c3aed; background: #ede9fe; }
-    .shift-upload-icon { font-size: 36px; margin-bottom: 10px; }
-    .shift-upload-text { font-size: 15px; font-weight: 700; color: #4c1d95; margin-bottom: 4px; }
-    .shift-upload-sub { font-size: 12px; color: #7c3aed; }
-    .shift-processing {
-      text-align: center; padding: 24px;
-      background: #f3e8ff; border-radius: 12px; margin-bottom: 16px;
-    }
-    .shift-processing-icon { font-size: 28px; animation: spin 1.5s linear infinite; display: inline-block; margin-bottom: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .shift-processing-text { font-size: 14px; font-weight: 600; color: #6d28d9; }
-    .shift-preview-box {
-      background: white; border-radius: 16px; border: 1px solid #e9d5ff;
-      overflow: hidden; margin-bottom: 16px;
-    }
-    .shift-preview-header {
-      background: linear-gradient(135deg, #4c1d95, #7c3aed);
-      color: white; padding: 14px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .shift-preview-title { font-size: 14px; font-weight: 700; }
-    .shift-preview-month { font-size: 12px; opacity: 0.8; }
-    .shift-table-wrap { overflow-x: auto; padding: 16px; }
-    .shift-table {
-      width: 100%; border-collapse: collapse; font-size: 11px; min-width: 600px;
-    }
-    .shift-table th {
-      background: #f3e8ff; color: #4c1d95; font-weight: 700;
-      padding: 6px 8px; text-align: center; border: 1px solid #e9d5ff;
-      white-space: nowrap;
-    }
-    .shift-table td {
-      padding: 5px 8px; text-align: center; border: 1px solid #f1f5f9;
-      white-space: nowrap;
-    }
-    .shift-table tr:nth-child(even) td { background: #fafafa; }
-    .shift-table td.work { color: #1e293b; font-weight: 600; }
-    .shift-table td.off { color: #cbd5e1; }
-    .shift-table td.name { text-align: left; font-weight: 700; color: #1e293b; background: #f8fafc; }
-    .btn-shift-save {
-      width: 100%; padding: 14px; border-radius: 12px; border: none;
-      background: linear-gradient(135deg, #4c1d95, #7c3aed);
-      color: white; font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: opacity 0.2s;
-    }
-    .btn-shift-save:hover { opacity: 0.9; }
-    .shift-saved-msg {
-      text-align: center; padding: 12px; background: #f0fdf4;
-      border: 1px solid #bbf7d0; border-radius: 10px;
-      color: #15803d; font-size: 13px; font-weight: 600; margin-top: 12px;
-    }
-    .current-shift-box {
-      background: white; border-radius: 16px; border: 1px solid #e2e8f0;
-      overflow: hidden; margin-top: 16px;
-    }
-    .current-shift-header {
-      background: #f8fafc; border-bottom: 1px solid #e2e8f0;
-      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .current-shift-title { font-size: 13px; font-weight: 700; color: #334155; }
-    .current-shift-month { font-size: 12px; color: #94a3b8; }
 
     .fraud-section { margin-top: 48px; }
     .fraud-section-title {
@@ -438,47 +361,6 @@
       <div class="empty-state"><div class="icon">⏳</div><div>読み込み中...</div></div>
     </div>
 
-    <!-- シフト管理セクション -->
-    <div class="shift-section">
-      <div class="shift-section-title">📅 シフト管理</div>
-
-      <div class="shift-upload-box" id="shiftDropZone"
-        onclick="document.getElementById('shiftFileInput').click()"
-        ondragover="event.preventDefault();this.classList.add('dragover')"
-        ondragleave="this.classList.remove('dragover')"
-        ondrop="this.classList.remove('dragover');handleShiftDrop(event)">
-        <div class="shift-upload-icon">🤖</div>
-        <div class="shift-upload-text">シフト表をアップロード</div>
-        <div class="shift-upload-sub">画像（JPG/PNG）またはExcel（XLSX）をドラッグ＆ドロップ、またはクリック</div>
-        <input type="file" id="shiftFileInput" accept="image/*,.xlsx,.xls" style="display:none"
-          onchange="handleShiftFile(event)">
-      </div>
-
-      <div id="shiftProcessing" style="display:none" class="shift-processing">
-        <div class="shift-processing-icon">⚙️</div>
-        <div class="shift-processing-text">Gemini AI がシフト表を解析中...</div>
-      </div>
-
-      <div id="shiftPreviewWrap" style="display:none">
-        <div class="shift-preview-box">
-          <div class="shift-preview-header">
-            <div class="shift-preview-title">📋 解析結果</div>
-            <div class="shift-preview-month" id="shiftPreviewMonth"></div>
-          </div>
-          <div class="shift-table-wrap" id="shiftPreviewContent"></div>
-        </div>
-        <button class="btn-shift-save" onclick="saveShiftData()">✓ この内容でFirestoreに保存する</button>
-        <div id="shiftSavedMsg" style="display:none" class="shift-saved-msg">✅ シフトを保存しました！</div>
-      </div>
-
-      <div id="currentShiftWrap" style="display:none" class="current-shift-box">
-        <div class="current-shift-header">
-          <div class="current-shift-title">📆 保存済みシフト</div>
-          <div class="current-shift-month" id="currentShiftMonth"></div>
-        </div>
-        <div class="shift-table-wrap" id="currentShiftContent"></div>
-      </div>
-    </div>
 
     <div class="fraud-section">
       <div class="fraud-section-title">⚠️ 不正行為ログ</div>
@@ -593,7 +475,6 @@ async function loadStaffList() {
   const grid = document.getElementById('staffGrid');
   grid.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><div>読み込み中...</div></div>';
   loadFraudLogs();
-  loadCurrentShift();
   const snapshot = await db.collection('staff').get();
   if (snapshot.empty) {
     grid.innerHTML = '<div class="empty-state"><div class="icon">👥</div><div>スタッフが登録されていません<br><a href="register.html" style="color:#3b82f6">＋ メンバーを追加する</a></div></div>';
@@ -946,179 +827,6 @@ function closeDayModal() {
 document.getElementById('dayModal').addEventListener('click', function(e) {
   if (e.target === this) closeDayModal();
 });
-
-// ============================
-// シフト管理
-// ============================
-const GEMINI_API_KEY = 'AIzaSyDCKcOOvAJIDMoSey3mO_nezGI0fRsqIs4';
-let parsedShiftData = null;
-
-function handleShiftDrop(event) {
-  event.preventDefault();
-  const file = event.dataTransfer.files[0];
-  if (file) processShiftFile(file);
-}
-
-function handleShiftFile(event) {
-  const file = event.target.files[0];
-  if (file) processShiftFile(file);
-  event.target.value = '';
-}
-
-async function processShiftFile(file) {
-  document.getElementById('shiftProcessing').style.display = 'block';
-  document.getElementById('shiftPreviewWrap').style.display = 'none';
-  document.getElementById('shiftSavedMsg').style.display = 'none';
-
-  try {
-    let shiftData;
-    if (file.name.match(/\.(xlsx|xls)$/i)) {
-      shiftData = await parseExcelWithGemini(file);
-    } else {
-      shiftData = await parseImageWithGemini(file);
-    }
-    parsedShiftData = shiftData;
-    showShiftPreview(shiftData);
-  } catch(e) {
-    alert('解析に失敗しました。画像が鮮明か確認してください。\n' + e.message);
-    console.error(e);
-  }
-  document.getElementById('shiftProcessing').style.display = 'none';
-}
-
-async function parseImageWithGemini(file) {
-  const base64 = await fileToBase64(file);
-  const parts = [
-    { text: getGeminiPrompt() },
-    { inline_data: { mime_type: file.type, data: base64.split(',')[1] } }
-  ];
-  return await callGemini(parts);
-}
-
-async function parseExcelWithGemini(file) {
-  const data = await file.arrayBuffer();
-  const wb = XLSX.read(data);
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const csv = XLSX.utils.sheet_to_csv(ws);
-  const parts = [
-    { text: getGeminiPrompt() + '\n\n以下はExcelから抽出したCSVデータです：\n\n' + csv }
-  ];
-  return await callGemini(parts);
-}
-
-function getGeminiPrompt() {
-  const now = new Date();
-  return `このシフト表のデータを読み取って、必ず以下のJSON形式のみで出力してください（説明文・コードブロック不要）。
-年月が明記されていない場合は${now.getFullYear()}年${now.getMonth()+1}月として扱ってください。
-時刻は必ず"HH:MM-HH:MM"形式（例: "09:00-18:00"）にしてください。
-休みや空白の日はnullにしてください。
-
-{
-  "year": 年(数値),
-  "month": 月(数値),
-  "staff": [
-    {
-      "name": "スタッフ名",
-      "schedule": {
-        "1": "09:00-18:00",
-        "2": null,
-        "3": "10:00-19:00"
-      }
-    }
-  ]
-}`;
-}
-
-async function callGemini(parts) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts }] })
-    }
-  );
-  const data = await res.json();
-  if (!data.candidates) throw new Error('Gemini APIエラー: ' + JSON.stringify(data));
-  const text = data.candidates[0].content.parts[0].text;
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('JSONを抽出できませんでした');
-  return JSON.parse(match[0]);
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function showShiftPreview(data) {
-  document.getElementById('shiftPreviewMonth').textContent = `${data.year}年${data.month}月`;
-  document.getElementById('shiftPreviewContent').innerHTML = buildShiftTable(data);
-  document.getElementById('shiftPreviewWrap').style.display = 'block';
-}
-
-function buildShiftTable(data) {
-  const daysInMonth = new Date(data.year, data.month, 0).getDate();
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  let html = '<table class="shift-table"><thead><tr>';
-  html += '<th>氏名</th>';
-  days.forEach(d => {
-    const dow = new Date(data.year, data.month - 1, d).getDay();
-    const colors = ['color:#ef4444','','','','','','color:#3b82f6'];
-    html += `<th style="${colors[dow]}">${d}</th>`;
-  });
-  html += '</tr></thead><tbody>';
-
-  data.staff.forEach(s => {
-    html += `<tr><td class="name">${s.name}</td>`;
-    days.forEach(d => {
-      const val = s.schedule ? s.schedule[String(d)] : null;
-      if (val) {
-        const short = val.replace(/-\d{2}:\d{2}$/, '').replace(/^(\d{2}):00/, '$1:00');
-        html += `<td class="work" title="${val}">${short}〜</td>`;
-      } else {
-        html += `<td class="off">休</td>`;
-      }
-    });
-    html += '</tr>';
-  });
-
-  html += '</tbody></table>';
-  return html;
-}
-
-async function saveShiftData() {
-  if (!parsedShiftData) return;
-  const docId = `${parsedShiftData.year}-${String(parsedShiftData.month).padStart(2,'0')}`;
-  try {
-    await db.collection('shifts').doc(docId).set({
-      ...parsedShiftData,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('shiftSavedMsg').style.display = 'block';
-    loadCurrentShift();
-  } catch(e) {
-    alert('保存に失敗しました: ' + e.message);
-  }
-}
-
-async function loadCurrentShift() {
-  const now = new Date();
-  const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  try {
-    const doc = await db.collection('shifts').doc(docId).get();
-    if (!doc.exists) return;
-    const data = doc.data();
-    document.getElementById('currentShiftMonth').textContent = `${data.year}年${data.month}月`;
-    document.getElementById('currentShiftContent').innerHTML = buildShiftTable(data);
-    document.getElementById('currentShiftWrap').style.display = 'block';
-  } catch(e) { console.warn('シフト読み込みエラー:', e); }
-}
 
 // ============================
 // 写真フルスクリーン
