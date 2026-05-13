@@ -103,6 +103,13 @@
     .fraud-card-body { padding: 12px 14px; }
     .fraud-card-name { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 3px; }
     .fraud-card-time { font-size: 11px; color: #94a3b8; }
+    .fraud-card-footer { padding: 0 14px 12px; }
+    .btn-fraud-delete {
+      width: 100%; padding: 6px; border-radius: 8px; border: 1px solid #fecaca;
+      background: #fff5f5; color: #dc2626; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-fraud-delete:hover { background: #fee2e2; }
     .fraud-card-badge {
       display: inline-block; font-size: 10px; font-weight: 700;
       background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;
@@ -539,11 +546,27 @@ async function loadFraudLogs() {
           <div class="fraud-card-badge">⚠ 不正行為検知</div>
           <div class="fraud-card-name">${log.detectedStaffName || '不明'}</div>
           <div class="fraud-card-time">${timeStr}</div>
+        </div>
+        <div class="fraud-card-footer">
+          <button class="btn-fraud-delete" onclick="deleteFraudLog('${log.id}', this)">🗑 削除</button>
         </div>`;
       grid.appendChild(card);
     });
   } catch(e) {
     grid.innerHTML = '<div class="fraud-empty">読み込みに失敗しました</div>';
+  }
+}
+
+async function deleteFraudLog(id, btn) {
+  if (!confirm('この不正行為ログを削除しますか？')) return;
+  try {
+    await db.collection('fraudLogs').doc(id).delete();
+    btn.closest('.fraud-card').remove();
+    if (document.getElementById('fraudGrid').children.length === 0) {
+      document.getElementById('fraudGrid').innerHTML = '<div class="fraud-empty">不正行為の記録はありません ✓</div>';
+    }
+  } catch(e) {
+    alert('削除に失敗しました');
   }
 }
 
