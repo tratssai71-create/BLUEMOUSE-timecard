@@ -892,6 +892,22 @@ function pd(a, b) {
 }
 
 // ============================
+// WebAuthn ユーティリティ
+// ============================
+function bufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function base64ToBuffer(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf;
+}
+
+// ============================
 // 指紋認証（WebAuthn）
 // ============================
 async function triggerFingerprintAuth(staff) {
@@ -907,7 +923,7 @@ async function triggerFingerprintAuth(staff) {
 
   try {
     const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const rawId = Uint8Array.from(atob(staff.credentialId), c => c.charCodeAt(0));
+    const rawId = base64ToBuffer(staff.credentialId);
     const assertion = await navigator.credentials.get({
       publicKey: {
         challenge,
@@ -956,15 +972,14 @@ async function doRegisterFingerprint() {
         ],
         authenticatorSelection: {
           authenticatorAttachment: 'platform',
-          userVerification: 'required',
-          residentKey: 'preferred'
+          userVerification: 'required'
         },
         timeout: 60000,
         attestation: 'none'
       }
     });
 
-    const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+    const credentialId = bufferToBase64(credential.rawId);
     await db.collection('staff').doc(currentStaff.id).update({ credentialId });
     currentStaff.credentialId = credentialId;
     for (const s of labeledDescriptors) {

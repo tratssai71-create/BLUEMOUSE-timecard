@@ -619,6 +619,16 @@ function hideStatus() {
 }
 
 // ============================
+// WebAuthn ユーティリティ
+// ============================
+function bufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+// ============================
 // 指紋登録（WebAuthn）
 // ============================
 async function registerFingerprint() {
@@ -648,15 +658,14 @@ async function registerFingerprint() {
         ],
         authenticatorSelection: {
           authenticatorAttachment: 'platform',
-          userVerification: 'required',
-          residentKey: 'preferred'
+          userVerification: 'required'
         },
         timeout: 60000,
         attestation: 'none'
       }
     });
 
-    credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+    credentialId = bufferToBase64(credential.rawId);
     showFpStatus('success', '✓ 指紋を登録しました！');
     btn.textContent = '✓ 登録済み';
     btn.style.background = 'linear-gradient(135deg, #059669, #047857)';
