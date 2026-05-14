@@ -319,15 +319,14 @@
     </div>
   </div>
 
-  <!-- 指紋登録 -->
+  <!-- 指紋登録（必須） -->
   <div class="card" id="fingerprintCard" style="display:none">
-    <div class="card-title">👆 指紋登録（本人のスマホで行ってください）</div>
+    <div class="card-title">👆 指紋登録<span class="required">*</span></div>
     <p style="font-size:13px;color:#64748b;margin-bottom:20px">
-      このステップは<strong>スタッフ本人のスマホ</strong>で行う必要があります。<br>
-      登録した指紋が、打刻時の本人確認に使われます。
+      打刻時の本人確認に使います。このMacBookのTouch IDで登録してください。
     </p>
     <button class="btn btn-capture" id="btnFingerprintReg" onclick="registerFingerprint()" style="width:100%;margin-bottom:12px">
-      👆 指紋を登録する
+      👆 Touch IDで指紋を登録する
     </button>
     <div class="status-box" id="fpStatus" style="display:none"></div>
   </div>
@@ -664,11 +663,9 @@ async function registerFingerprint() {
     updateSaveButton();
   } catch(e) {
     console.error('指紋登録エラー:', e);
-    showFpStatus('error', '失敗しました。もう一度試すか、スキップして登録できます。');
+    showFpStatus('error', '失敗しました。もう一度試してください。');
     btn.disabled = false;
-    btn.textContent = '👆 指紋を登録する';
-    // 指紋なしでも登録できるようにする
-    if (faceDescriptor) document.getElementById('btnSave').disabled = false;
+    btn.textContent = '👆 Touch IDで指紋を登録する';
   }
 }
 
@@ -690,8 +687,8 @@ function showFpStatus(type, msg) {
 
 function updateSaveButton() {
   const hasName = document.getElementById('inputName').value.trim().length > 0;
-  // 顔データがあれば保存できる（指紋はオプション）
-  document.getElementById('btnSave').disabled = !(hasName && faceDescriptor);
+  // 顔データ＋指紋の両方が必須
+  document.getElementById('btnSave').disabled = !(hasName && faceDescriptor && credentialId);
 }
 
 // ============================
@@ -703,6 +700,7 @@ async function saveStaff() {
 
   if (!name) { alert('名前を入力してください'); return; }
   if (!faceDescriptor) { alert('顔写真を撮影してください'); return; }
+  if (!credentialId) { alert('指紋を登録してください'); return; }
 
   document.getElementById('btnSave').disabled = true;
   document.getElementById('btnSave').textContent = '登録中...';
@@ -718,10 +716,7 @@ async function saveStaff() {
     if (credentialId) data.credentialId = credentialId;
 
     await db.collection('staff').add(data);
-    const msg = credentialId
-      ? `✓ ${name}さんを登録しました！（顔認証＋指紋認証）`
-      : `✓ ${name}さんを登録しました！（顔認証のみ）`;
-    alert(msg);
+    alert(`✓ ${name}さんを登録しました！`);
     window.location.href = 'admin.html';
   } catch(e) {
     alert('登録に失敗しました: ' + e.message);
