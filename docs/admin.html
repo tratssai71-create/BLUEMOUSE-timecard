@@ -363,7 +363,10 @@
 
 
     <div class="fraud-section">
-      <div class="fraud-section-title">⚠️ 不正行為ログ</div>
+      <div class="fraud-section-title">
+        ⚠️ 不正行為ログ
+        <button onclick="deleteAllFraudLogs()" style="margin-left:auto;font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #fecaca;background:#fff5f5;color:#dc2626;cursor:pointer;font-weight:600;">🗑 全削除</button>
+      </div>
       <div class="fraud-grid" id="fraudGrid">
         <div class="fraud-empty">読み込み中...</div>
       </div>
@@ -555,6 +558,15 @@ async function loadFraudLogs() {
   } catch(e) {
     grid.innerHTML = '<div class="fraud-empty">読み込みに失敗しました</div>';
   }
+}
+
+async function deleteAllFraudLogs() {
+  if (!confirm('不正行為ログを全件削除しますか？')) return;
+  const snap = await db.collection('fraudLogs').get();
+  const batch = db.batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  document.getElementById('fraudGrid').innerHTML = '<div class="fraud-empty">不正行為の記録はありません ✓</div>';
 }
 
 async function deleteFraudLog(id, btn) {
