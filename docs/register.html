@@ -319,6 +319,19 @@
     </div>
   </div>
 
+  <!-- 指紋登録 -->
+  <div class="card" id="fingerprintCard" style="display:none">
+    <div class="card-title">👆 指紋登録（本人のスマホで行ってください）</div>
+    <p style="font-size:13px;color:#64748b;margin-bottom:20px">
+      このステップは<strong>スタッフ本人のスマホ</strong>で行う必要があります。<br>
+      登録した指紋が、打刻時の本人確認に使われます。
+    </p>
+    <button class="btn btn-capture" id="btnFingerprintReg" onclick="registerFingerprint()" style="width:100%;margin-bottom:12px">
+      👆 指紋を登録する
+    </button>
+    <div class="status-box" id="fpStatus" style="display:none"></div>
+  </div>
+
   <!-- 保存ボタン -->
   <button class="btn-save" id="btnSave" onclick="saveStaff()" disabled>
     スタッフを登録する
@@ -344,6 +357,8 @@ let db;
 let videoStream = null;
 let faceDescriptor = null;
 let photoBase64 = null;
+let credentialId = null;
+const WEBAUTHN_RPID = location.hostname;
 
 // ============================
 // 管理者認証
@@ -477,7 +492,10 @@ async function capturePhoto() {
   document.getElementById('btnCapture').style.display = 'none';
   document.getElementById('btnStartCamera').style.display = 'none';
   showStatus('success', '');
-  document.getElementById('btnSave').disabled = false;
+  // 指紋登録カードを表示
+  document.getElementById('fingerprintCard').style.display = 'block';
+  document.getElementById('fingerprintCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateSaveButton();
 }
 
 function retakePhoto() {
@@ -489,7 +507,13 @@ function retakePhoto() {
   document.getElementById('btnCapture').disabled = false;
   document.getElementById('btnStartCamera').style.display = 'block';
   faceDescriptor = null; photoBase64 = null;
-  document.getElementById('btnSave').disabled = true;
+  credentialId = null;
+  document.getElementById('fingerprintCard').style.display = 'none';
+  document.getElementById('fpStatus').style.display = 'none';
+  document.getElementById('btnFingerprintReg').disabled = false;
+  document.getElementById('btnFingerprintReg').textContent = '👆 指紋を登録する';
+  document.getElementById('btnFingerprintReg').style.background = '';
+  updateSaveButton();
   hideStatus();
   startCamera();
 }
@@ -567,7 +591,10 @@ async function uploadPhoto(event) {
   document.getElementById('btnCapture').style.display = 'none';
   document.getElementById('btnStartCamera').style.display = 'none';
   showStatus('success', '');
-  document.getElementById('btnSave').disabled = false;
+  // 指紋登録カードを表示
+  document.getElementById('fingerprintCard').style.display = 'block';
+  document.getElementById('fingerprintCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateSaveButton();
   event.target.value = '';
 }
 
@@ -593,6 +620,81 @@ function hideStatus() {
 }
 
 // ============================
+// 指紋登録（WebAuthn）
+// ============================
+async function registerFingerprint() {
+  if (!window.PublicKeyCredential) {
+    showFpStatus('error', 'このデバイスは指紋認証に対応していません。スキップして登録できます。');
+    document.getElementById('btnSave').disabled = !faceDescriptor;
+    return;
+  }
+  const btn = document.getElementById('btnFingerprintReg');
+  btn.disabled = true;
+  btn.textContent = '登録中...';
+  showFpStatus('loading', '指紋をスキャンしてください...');
+
+  try {
+    const name = document.getElementById('inputName').value.trim() || 'スタッフ';
+    const tempId = new TextEncoder().encode('staff-' + Date.now());
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { id: WEBAUTHN_RPID, name: 'BLUE MOUSE タイムカード' },
+        user: { id: tempId, name, displayName: name },
+        pubKeyCredParams: [
+          { alg: -7,   type: 'public-key' },
+          { alg: -257, type: 'public-key' }
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required',
+          residentKey: 'preferred'
+        },
+        timeout: 60000,
+        attestation: 'none'
+      }
+    });
+
+    credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+    showFpStatus('success', '✓ 指紋を登録しました！');
+    btn.textContent = '✓ 登録済み';
+    btn.style.background = 'linear-gradient(135deg, #059669, #047857)';
+    updateSaveButton();
+  } catch(e) {
+    console.error('指紋登録エラー:', e);
+    showFpStatus('error', '失敗しました。もう一度試すか、スキップして登録できます。');
+    btn.disabled = false;
+    btn.textContent = '👆 指紋を登録する';
+    // 指紋なしでも登録できるようにする
+    if (faceDescriptor) document.getElementById('btnSave').disabled = false;
+  }
+}
+
+function showFpStatus(type, msg) {
+  const el = document.getElementById('fpStatus');
+  el.style.display = 'block';
+  el.className = 'status-box';
+  if (type === 'loading') {
+    el.classList.add('status-loading');
+    el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
+  } else if (type === 'success') {
+    el.classList.add('status-success');
+    el.textContent = msg;
+  } else {
+    el.classList.add('status-error');
+    el.textContent = msg;
+  }
+}
+
+function updateSaveButton() {
+  const hasName = document.getElementById('inputName').value.trim().length > 0;
+  // 顔データがあれば保存できる（指紋はオプション）
+  document.getElementById('btnSave').disabled = !(hasName && faceDescriptor);
+}
+
+// ============================
 // スタッフ保存
 // ============================
 async function saveStaff() {
@@ -606,15 +708,20 @@ async function saveStaff() {
   document.getElementById('btnSave').textContent = '登録中...';
 
   try {
-    await db.collection('staff').add({
-      name: name,
-      position: position,
-      photoBase64: photoBase64,
-      faceDescriptor: faceDescriptor,
+    const data = {
+      name,
+      position,
+      photoBase64,
+      faceDescriptor,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (credentialId) data.credentialId = credentialId;
 
-    alert(`✓ ${name}さんを登録しました！`);
+    await db.collection('staff').add(data);
+    const msg = credentialId
+      ? `✓ ${name}さんを登録しました！（顔認証＋指紋認証）`
+      : `✓ ${name}さんを登録しました！（顔認証のみ）`;
+    alert(msg);
     window.location.href = 'admin.html';
   } catch(e) {
     alert('登録に失敗しました: ' + e.message);
