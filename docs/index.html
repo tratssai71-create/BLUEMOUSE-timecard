@@ -145,12 +145,6 @@
     }
     .face-detecting { color: #fbbf24; }
     .face-recognized { color: #34d399; }
-    .camera-status.liveness-check {
-      color: #fbbf24; font-weight: 700;
-      animation: pulse-text 0.8s ease-in-out infinite;
-    }
-    @keyframes pulse-text { 0%,100%{opacity:1} 50%{opacity:0.6} }
-
     /* Profile Card */
     #profileCard {
       display: none;
@@ -484,15 +478,6 @@ let detectionTimer = null;
 let videoStream = null;
 let phoneDetector = null;
 let lastFaceTime = 0;
-// チャレンジ式ライブネス
-let currentChallenge = null;
-let challengeStartTime = null;
-let baseL = [], baseR = [], baseMar = [];
-let baseLeftEAR = null, baseRightEAR = null, baseMAR = null;
-let livenessCompleted = false;
-const LIVENESS_CHALLENGES = [
-  { id: 'mouth', label: '😮 口を大きく開けて！' },
-];
 
 // ============================
 // 初期化
@@ -694,10 +679,6 @@ function startDetection() {
       if (!currentStaff || currentStaff.id !== bestMatch.id) {
         showProfile(bestMatch);
       }
-      // チャレンジ判定（ライブネスチェック）
-      if (currentChallenge && !livenessCompleted) {
-        checkChallenge(detection.landmarks.positions);
-      }
       // スマホ検知
       if (phoneDetector) {
         const predictions = await phoneDetector.detect(video);
@@ -763,13 +744,10 @@ function showProfile(staff) {
   document.getElementById('staffPositionEl').textContent = staff.position;
   document.getElementById('staffPhotoEl').src = staff.photo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23334155"/><text x="50" y="65" text-anchor="middle" font-size="40" fill="%23f8fafc">' + staff.name.charAt(0) + '</text></svg>';
   document.getElementById('profileCard').style.display = 'flex';
-  document.getElementById('btnIn').disabled = true;
-  document.getElementById('btnOut').disabled = true;
-  startLivenessCheck();
+  enableButtons();
 }
 
 function hideProfile() {
-  cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
   document.getElementById('btnIn').disabled = true;
@@ -781,82 +759,6 @@ function enableButtons() {
   document.getElementById('btnOut').disabled = false;
   setStatus('✓ ' + currentStaff.name + 'さんを認証しました', 'recognized');
 }
-
-// ============================
-// チャレンジ式ライブネス検知
-// （メインの検知ループと同じ推論結果を使い、別途TF.js呼び出しなし）
-// ============================
-function startLivenessCheck() {
-  currentChallenge = LIVENESS_CHALLENGES[Math.floor(Math.random() * LIVENESS_CHALLENGES.length)];
-  challengeStartTime = Date.now();
-  baseL = []; baseR = []; baseMar = [];
-  baseLeftEAR = null; baseRightEAR = null; baseMAR = null;
-  livenessCompleted = false;
-  setStatus(`🎯 ${currentChallenge.label}`, 'detecting');
-}
-
-function cancelLiveness() {
-  currentChallenge = null;
-  challengeStartTime = null;
-  baseL = []; baseR = []; baseMar = [];
-  baseLeftEAR = null; baseRightEAR = null; baseMAR = null;
-  livenessCompleted = false;
-}
-
-function checkChallenge(positions) {
-  if (!currentChallenge || !challengeStartTime) return;
-
-  const elapsed = Date.now() - challengeStartTime;
-  const remaining = Math.max(0, Math.ceil((10000 - elapsed) / 1000));
-
-  if (elapsed >= 10000) {
-    cancelLiveness();
-    handleFraud();
-    return;
-  }
-
-  const mar = mouthAR(positions);
-
-  // ① ベースライン計測：口のMAR基準値を3サンプル取る
-  if (!baseMAR) {
-    if (mar < 0.50) baseMar.push(mar);
-    if (baseMar.length >= 3) {
-      baseMAR = baseMar.reduce((a,b)=>a+b,0) / baseMar.length;
-      console.log('[Challenge] baseMAR:', baseMAR.toFixed(3));
-    }
-    setStatus(`🎯 ${currentChallenge.label}（残り ${remaining} 秒）`, 'detecting');
-    return;
-  }
-
-  // ② チャレンジ判定（口を開けているか）
-  const ok = mar > Math.max(baseMAR * 2.2, baseMAR + 0.20);
-  console.log('[Challenge] MAR:', mar.toFixed(3), '/ base:', baseMAR.toFixed(3), '/ ok:', ok);
-
-  if (ok) {
-    livenessCompleted = true;
-    cancelLiveness();
-    enableButtons();
-    return;
-  }
-
-  setStatus(`🎯 ${currentChallenge.label}（残り ${remaining} 秒）`, 'detecting');
-}
-
-function eyeEAR(pts) {
-  const A = pd(pts[1], pts[5]);
-  const B = pd(pts[2], pts[4]);
-  const C = pd(pts[0], pts[3]);
-  return (A + B) / (2.0 * C);
-}
-
-function mouthAR(pos) {
-  return pd(pos[51], pos[57]) / (pd(pos[48], pos[54]) + 0.001);
-}
-
-function pd(a, b) {
-  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-}
-
 
 // ============================
 // 打刻処理
