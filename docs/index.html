@@ -187,22 +187,7 @@
     }
 
     /* Action Buttons */
-    .btn-fingerprint {
-      width: min(400px, 90vw);
-      padding: 16px; border-radius: 14px;
-      background: linear-gradient(135deg, #7c3aed, #6d28d9);
-      color: white; font-size: 16px; font-weight: 600;
-      border: none; cursor: pointer; margin-top: 12px;
-      box-shadow: 0 2px 12px rgba(124,58,237,0.35);
-      transition: transform 0.1s, box-shadow 0.2s;
-      display: none;
-    }
-    .btn-fingerprint:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(124,58,237,0.45); }
-    .btn-fingerprint.verifying {
-      animation: pulse-text 0.8s ease-in-out infinite;
-      cursor: default;
-    }
-    .action-buttons {
+.action-buttons {
       display: flex; gap: 16px;
       width: min(400px, 90vw);
       margin-top: 16px; padding-bottom: 32px;
@@ -429,10 +414,6 @@
       </div>
     </div>
 
-    <button class="btn-fingerprint" id="btnFingerprint" onclick="doRegisterFingerprint()">
-      👆 指紋を登録する（初回のみ）
-    </button>
-
     <div class="action-buttons">
       <button class="btn-clock" id="btnIn" disabled onclick="clockAction('in')">出勤</button>
       <button class="btn-clock" id="btnOut" disabled onclick="clockAction('out')">退勤</button>
@@ -503,7 +484,6 @@ let detectionTimer = null;
 let videoStream = null;
 let phoneDetector = null;
 let lastFaceTime = 0;
-const WEBAUTHN_RPID = location.hostname;
 // チャレンジ式ライブネス
 let currentChallenge = null;
 let challengeStartTime = null;
@@ -665,8 +645,7 @@ async function loadStaffDescriptors() {
         name: d.name,
         position: d.position || '',
         photo: d.photoBase64 || '',
-        descriptor: new Float32Array(d.faceDescriptor),
-        credentialId: d.credentialId || null
+        descriptor: new Float32Array(d.faceDescriptor)
       });
     }
   });
@@ -786,26 +765,13 @@ function showProfile(staff) {
   document.getElementById('profileCard').style.display = 'flex';
   document.getElementById('btnIn').disabled = true;
   document.getElementById('btnOut').disabled = true;
-
-  if (staff.credentialId) {
-    // 指紋登録済み → 指紋認証へ
-    document.getElementById('btnFingerprint').style.display = 'none';
-    triggerFingerprintAuth(staff);
-  } else {
-    // 未登録 → 登録ボタンを表示
-    document.getElementById('btnFingerprint').style.display = 'block';
-    document.getElementById('btnFingerprint').textContent = '👆 指紋を登録する（初回のみ）';
-    document.getElementById('btnFingerprint').classList.remove('verifying');
-    setStatus('👆 まず指紋を登録してください', 'detecting');
-  }
+  startLivenessCheck();
 }
 
 function hideProfile() {
   cancelLiveness();
   currentStaff = null;
   document.getElementById('profileCard').style.display = 'none';
-  document.getElementById('btnFingerprint').style.display = 'none';
-  document.getElementById('btnFingerprint').classList.remove('verifying');
   document.getElementById('btnIn').disabled = true;
   document.getElementById('btnOut').disabled = true;
 }
@@ -891,112 +857,6 @@ function pd(a, b) {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
-// ============================
-// WebAuthn ユーティリティ
-// ============================
-function bufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
-function base64ToBuffer(b64) {
-  const bin = atob(b64);
-  const buf = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-  return buf;
-}
-
-// ============================
-// 指紋認証（WebAuthn）
-// ============================
-async function triggerFingerprintAuth(staff) {
-  if (!window.PublicKeyCredential) {
-    // WebAuthn非対応デバイスはスキップ
-    enableButtons(); return;
-  }
-  const btn = document.getElementById('btnFingerprint');
-  btn.style.display = 'block';
-  btn.textContent = '👆 指紋認証中...';
-  btn.classList.add('verifying');
-  setStatus('👆 指紋認証してください', 'detecting');
-
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const rawId = base64ToBuffer(staff.credentialId);
-    const assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        rpId: WEBAUTHN_RPID,
-        allowCredentials: [{ id: rawId, type: 'public-key' }],
-        userVerification: 'required',
-        timeout: 30000
-      }
-    });
-    if (assertion) {
-      btn.style.display = 'none';
-      btn.classList.remove('verifying');
-      enableButtons();
-    }
-  } catch(e) {
-    console.warn('指紋認証失敗:', e);
-    btn.textContent = '👆 もう一度試す';
-    btn.classList.remove('verifying');
-    btn.onclick = () => triggerFingerprintAuth(staff);
-    setStatus('指紋認証に失敗しました。もう一度試してください', 'detecting');
-  }
-}
-
-async function doRegisterFingerprint() {
-  if (!currentStaff) return;
-  if (!window.PublicKeyCredential) {
-    alert('このデバイスは指紋認証（WebAuthn）に対応していません');
-    return;
-  }
-  const btn = document.getElementById('btnFingerprint');
-  btn.textContent = '登録中...';
-  btn.classList.add('verifying');
-  setStatus('👆 指紋をスキャンしてください', 'detecting');
-
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const userId = new TextEncoder().encode(currentStaff.id);
-    const credential = await navigator.credentials.create({
-      publicKey: {
-        challenge,
-        rp: { id: WEBAUTHN_RPID, name: 'BLUE MOUSE タイムカード' },
-        user: { id: userId, name: currentStaff.name, displayName: currentStaff.name },
-        pubKeyCredParams: [
-          { alg: -7,   type: 'public-key' },
-          { alg: -257, type: 'public-key' }
-        ],
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform',
-          userVerification: 'required'
-        },
-        timeout: 60000,
-        attestation: 'none'
-      }
-    });
-
-    const credentialId = bufferToBase64(credential.rawId);
-    await db.collection('staff').doc(currentStaff.id).update({ credentialId });
-    currentStaff.credentialId = credentialId;
-    for (const s of labeledDescriptors) {
-      if (s.id === currentStaff.id) s.credentialId = credentialId;
-    }
-
-    btn.style.display = 'none';
-    btn.classList.remove('verifying');
-    setStatus('✅ 指紋を登録しました！もう一度試してください', 'recognized');
-    setTimeout(() => hideProfile(), 3000);
-  } catch(e) {
-    console.error('指紋登録エラー:', e);
-    btn.textContent = '👆 指紋を登録する（初回のみ）';
-    btn.classList.remove('verifying');
-    setStatus('登録に失敗しました。もう一度試してください', 'detecting');
-  }
-}
 
 // ============================
 // 打刻処理
