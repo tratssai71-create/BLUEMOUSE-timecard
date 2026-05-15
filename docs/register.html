@@ -613,7 +613,6 @@ async function saveStaff() {
       faceDescriptor,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    if (credentialId) data.credentialId = credentialId;
 
     await db.collection('staff').add(data);
     alert(`✓ ${name}さんを登録しました！`);
